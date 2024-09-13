@@ -9,10 +9,18 @@ import (
 )
 
 type ParserUseCase interface {
+	ProduceMessage(toSend metadata.FunctionMetadata) error
+	ExtractFunctions(file *ast.File, fileName, packageName, link string) []metadata.FunctionMetadata
 }
 
 type parserUseCase struct {
 	producer *kafka.Producer
+}
+
+func NewParserUseCase(producer *kafka.Producer) ParserUseCase {
+	return &parserUseCase{
+		producer: producer,
+	}
 }
 
 func (p *parserUseCase) ProduceMessage(toSend metadata.FunctionMetadata) error {
