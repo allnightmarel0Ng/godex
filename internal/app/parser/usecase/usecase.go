@@ -3,6 +3,9 @@ package usecase
 import (
 	"fmt"
 	"go/ast"
+	"go/parser"
+	"go/token"
+	"strings"
 
 	metadata "github.com/allnightmarel0Ng/godex/internal/domain/model"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/kafka"
@@ -10,7 +13,7 @@ import (
 
 type ParserUseCase interface {
 	ProduceMessage(toSend metadata.FunctionMetadata) error
-	ExtractFunctions(file *ast.File, fileName, packageName, link string) []metadata.FunctionMetadata
+	ExtractFunctions(code []byte, url string) ([]metadata.FunctionMetadata, error)
 }
 
 type parserUseCase struct {
@@ -27,7 +30,21 @@ func (p *parserUseCase) ProduceMessage(toSend metadata.FunctionMetadata) error {
 	return p.producer.Produce("functions", []byte(toSend.ToString()))
 }
 
-func (p *parserUseCase) ExtractFunctions(file *ast.File, fileName, packageName, link string) []metadata.FunctionMetadata {
+func (p *parserUseCase) parseUrl(url string) (string, string, string) {
+	tokens := strings.Split(url, "/")
+	tokensLength := len(tokens)
+
+	return tokens[tokensLength-1], tokens[tokensLength-2], url
+}
+
+func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]metadata.FunctionMetadata, error) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "", code, parser.ParseComments)
+	if err != nil {
+		return nil, err
+	}
+
+	fileName, packageName, link := p.parseUrl(url)
 	var functions []metadata.FunctionMetadata
 	ast.Inspect(file, func(n ast.Node) bool {
 		function, ok := n.(*ast.FuncDecl)
@@ -84,5 +101,5 @@ func (p *parserUseCase) ExtractFunctions(file *ast.File, fileName, packageName, 
 		return true
 	})
 
-	return functions
+	return functions, nil
 }

@@ -42,6 +42,23 @@ func (p *ParserHandler) HandleMessage() {
 		msg, err := p.consumer.ReadMessage(time.Second)
 		if err == nil {
 			url := msg.String()
+			bytes, fetchErr := p.fetchFile(url)
+			if fetchErr != nil {
+				log.Printf("unable to fetch the file: %s", fetchErr.Error())
+				continue
+			}
+
+			functions, functionsErr := p.useCase.ExtractFunctions(bytes, url)
+			if functionsErr != nil {
+				log.Printf("unable to get functions from file: %s", functionsErr.Error())
+				continue
+			}
+			for _, function := range functions {
+				produceErr := p.useCase.ProduceMessage(function)
+				if produceErr != nil {
+					log.Printf("producer error: %s", produceErr.Error())
+				}
+			}
 		} else if !err.(*kafka.Error).IsTimeout() {
 			log.Printf("Consumer error: %s", err.Error())
 		}
