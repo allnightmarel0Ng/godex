@@ -18,6 +18,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to connect to the database: %s", err.Error())
 	}
+	defer db.Close()
 
 	repo := repository.NewContainerRepository(db)
 	useCase := usecase.NewContainerUseCase(repo)
@@ -26,6 +27,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to create kafka consumer: %s", err.Error())
 	}
+	defer consumer.Close()
 
 	err = consumer.SubscribeTopics([]string{"functions"})
 	if err != nil {
@@ -35,7 +37,7 @@ func main() {
 	kafkaHandler := handler.NewContainerKafkaHandler(consumer, useCase)
 	go kafkaHandler.Handle()
 
-	listener, err := net.Listen("tcp", ":5051")
+	listener, err := net.Listen("tcp", ":5001")
 	if err != nil {
 		log.Fatalf("unable to listen on port 5051: %s", err.Error())
 	}
