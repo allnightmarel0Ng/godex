@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package container;
+
+option go_package = ".;container";
+
+service Container {
+  rpc Find (SignatureRequest) returns (FunctionsResponse) {}
+}
+
+message SignatureRequest {
+  string signature = 1;
+}
+
+message FunctionsResponse {
+  repeated Function functions = 1;
+}
+
+message Function {
+  string functionName = 1;
+  string functionSignature = 2;
+  string functionComment = 3;
+  string fileName = 4;
+  string packageName = 5;
+  string packageLink = 6;
+}
