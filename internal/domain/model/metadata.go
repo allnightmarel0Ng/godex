@@ -1,10 +1,10 @@
-package metadata
+package model
 
 import "fmt"
 
 type PackageMetadata struct {
-	Name string
-	Link string
+	Name string `json:"name"`
+	Link string `json:"link"`
 }
 
 func (p *PackageMetadata) ToString() string {
@@ -12,8 +12,8 @@ func (p *PackageMetadata) ToString() string {
 }
 
 type FileMetadata struct {
-	Name    string
-	Package PackageMetadata
+	Name    string          `json:"name"`
+	Package PackageMetadata `json:"package"`
 }
 
 func (f *FileMetadata) ToString() string {
@@ -21,10 +21,10 @@ func (f *FileMetadata) ToString() string {
 }
 
 type FunctionMetadata struct {
-	Name      string
-	Signature string
-	Comment   string
-	File      FileMetadata
+	Name      string       `json:"name"`
+	Signature string       `json:"signature"`
+	Comment   string       `json:"comment"`
+	File      FileMetadata `json:"file"`
 }
 
 func (f *FunctionMetadata) ToString() string {
