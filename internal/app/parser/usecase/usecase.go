@@ -7,13 +7,13 @@ import (
 	"go/token"
 	"strings"
 
-	metadata "github.com/allnightmarel0Ng/godex/internal/domain/model"
+	"github.com/allnightmarel0Ng/godex/internal/domain/model"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/kafka"
 )
 
 type ParserUseCase interface {
-	ProduceMessage(toSend metadata.FunctionMetadata) error
-	ExtractFunctions(code []byte, url string) ([]metadata.FunctionMetadata, error)
+	ProduceMessage(toSend model.FunctionMetadata) error
+	ExtractFunctions(code []byte, url string) ([]model.FunctionMetadata, error)
 }
 
 type parserUseCase struct {
@@ -26,7 +26,7 @@ func NewParserUseCase(producer *kafka.Producer) ParserUseCase {
 	}
 }
 
-func (p *parserUseCase) ProduceMessage(toSend metadata.FunctionMetadata) error {
+func (p *parserUseCase) ProduceMessage(toSend model.FunctionMetadata) error {
 	return p.producer.Produce("functions", []byte(toSend.ToString()))
 }
 
@@ -37,7 +37,7 @@ func (p *parserUseCase) parseUrl(url string) (string, string, string) {
 	return tokens[tokensLength-1], tokens[tokensLength-2], url
 }
 
-func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]metadata.FunctionMetadata, error) {
+func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]model.FunctionMetadata, error) {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "", code, parser.ParseComments)
 	if err != nil {
@@ -45,7 +45,7 @@ func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]metadata.Fu
 	}
 
 	fileName, packageName, link := p.parseUrl(url)
-	var functions []metadata.FunctionMetadata
+	var functions []model.FunctionMetadata
 	ast.Inspect(file, func(n ast.Node) bool {
 		function, ok := n.(*ast.FuncDecl)
 		if !ok {
@@ -57,23 +57,19 @@ func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]metadata.Fu
 			signature += "("
 			for i, params := range function.Type.Params.List {
 				if i > 0 {
-					signature += ", "
-				}
-				for _, name := range params.Names {
-					signature += name.Name + " "
+					signature += ","
 				}
 				signature += fmt.Sprintf("%s", params.Type)
 			}
 			signature += ")"
 		}
 		if function.Type.Results != nil {
-			signature += " "
 			if len(function.Type.Results.List) > 1 {
 				signature += "("
 			}
 			for i, results := range function.Type.Results.List {
 				if i > 0 {
-					signature += ", "
+					signature += ","
 				}
 				signature += fmt.Sprintf("%s", results.Type)
 			}
@@ -86,13 +82,13 @@ func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]metadata.Fu
 			comment = function.Doc.Text()
 		}
 
-		functions = append(functions, metadata.FunctionMetadata{
+		functions = append(functions, model.FunctionMetadata{
 			Name:      function.Name.Name,
 			Signature: signature,
 			Comment:   comment,
-			File: metadata.FileMetadata{
+			File: model.FileMetadata{
 				Name: fileName,
-				Package: metadata.PackageMetadata{
+				Package: model.PackageMetadata{
 					Name: packageName,
 					Link: link,
 				},

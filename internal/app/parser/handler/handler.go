@@ -1,26 +1,19 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"time"
 
+	pb "github.com/allnightmarel0Ng/godex/internal/app/parser/proto"
 	"github.com/allnightmarel0Ng/godex/internal/app/parser/usecase"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type ParserHandler struct {
-	consumer *kafka.Consumer
-	useCase  usecase.ParserUseCase
-}
-
-func NewParserHandler(consumer *kafka.Consumer, useCase usecase.ParserUseCase) ParserHandler {
-	return ParserHandler{
-		consumer: consumer,
-		useCase:  useCase,
-	}
+	UseCase usecase.ParserUseCase
+	pb.UnimplementedParserServer
 }
 
 func (p *ParserHandler) fetchFile(url string) ([]byte, error) {
@@ -37,30 +30,33 @@ func (p *ParserHandler) fetchFile(url string) ([]byte, error) {
 	return io.ReadAll(response.Body)
 }
 
-func (p *ParserHandler) HandleMessage() {
-	for {
-		msg, err := p.consumer.ReadMessage(time.Second)
-		if err == nil {
-			url := msg.String()
-			bytes, fetchErr := p.fetchFile(url)
-			if fetchErr != nil {
-				log.Printf("unable to fetch the file: %s", fetchErr.Error())
-				continue
-			}
+func (p *ParserHandler) Download(ctx context.Context, in *pb.LinkRequest) (*pb.StatusReply, error) {
+	url := in.GetLink()
+	bytes, err := p.fetchFile(url)
+	if err != nil {
+		return &pb.StatusReply{
+			Status:  404,
+			Message: "unable to fetch the data from link",
+		}, fmt.Errorf("unable to fetch the data from link: %s", err.Error())
+	}
 
-			functions, functionsErr := p.useCase.ExtractFunctions(bytes, url)
-			if functionsErr != nil {
-				log.Printf("unable to get functions from file: %s", functionsErr.Error())
-				continue
-			}
-			for _, function := range functions {
-				produceErr := p.useCase.ProduceMessage(function)
-				if produceErr != nil {
-					log.Printf("producer error: %s", produceErr.Error())
-				}
-			}
-		} else if !err.(*kafka.Error).IsTimeout() {
-			log.Printf("Consumer error: %s", err.Error())
+	functions, err := p.UseCase.ExtractFunctions(bytes, url)
+	if err != nil {
+		return &pb.StatusReply{
+			Status:  405,
+			Message: "unable to get functions from file",
+		}, fmt.Errorf("unable to get functions from file: %s", err.Error())
+	}
+
+	for _, function := range functions {
+		err = p.UseCase.ProduceMessage(function)
+		if err != nil {
+			log.Printf("producer error: %s", err.Error())
 		}
 	}
+
+	return &pb.StatusReply{
+		Status:  200,
+		Message: "OK",
+	}, nil
 }
