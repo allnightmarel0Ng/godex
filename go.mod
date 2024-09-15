@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/confluentinc/confluent-kafka-go/v2 v2.5.3 // indirect
+	github.com/go-chi/chi/v5 v5.1.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/net v0.29.0 // indirect
