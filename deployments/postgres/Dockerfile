@@ -4,6 +4,4 @@ ENV POSTGRES_USER=admin
 ENV POSTGRES_PASSWORD=admin
 ENV POSTGRES_DB=godex
 
-COPY ./scripts/init-db.sh /docker-entrypoint-entrydb.d/init-db.sh
-
 EXPOSE 5432
