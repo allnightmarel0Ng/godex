@@ -1,6 +1,6 @@
 module github.com/allnightmarel0Ng/godex
 
-go 1.21
+go 1.22
 
 require (
 	github.com/confluentinc/confluent-kafka-go/v2 v2.5.3 // indirect

@@ -23,7 +23,7 @@ func main() {
 	repo := repository.NewContainerRepository(db)
 	useCase := usecase.NewContainerUseCase(repo)
 
-	consumer, err := kafka.NewConsumer("localhost:9092", "foo")
+	consumer, err := kafka.NewConsumer("kafka:9092", "functions")
 	if err != nil {
 		log.Fatalf("unable to create kafka consumer: %s", err.Error())
 	}
@@ -39,7 +39,7 @@ func main() {
 
 	listener, err := net.Listen("tcp", ":5001")
 	if err != nil {
-		log.Fatalf("unable to listen on port 5051: %s", err.Error())
+		log.Fatalf("unable to listen on port 5001: %s", err.Error())
 	}
 
 	server := grpc.NewServer()
@@ -47,7 +47,7 @@ func main() {
 
 	err = server.Serve(listener)
 	if err != nil {
-		log.Fatalf("unable to serve on port 5051: %s", err.Error())
+		log.Fatalf("unable to serve on port 5001: %s", err.Error())
 	}
 
 }

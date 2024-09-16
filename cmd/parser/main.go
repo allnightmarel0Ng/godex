@@ -18,7 +18,7 @@ func main() {
 	}
 	defer listener.Close()
 
-	producer, err := kafka.NewProducer("localhost:9092")
+	producer, err := kafka.NewProducer("kafka:9092")
 	if err != nil {
 		log.Fatalf("unable to create a kafka producer")
 	}
