@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"log"
 	"strings"
 
 	"github.com/allnightmarel0Ng/godex/internal/domain/model"
@@ -27,6 +28,7 @@ func NewParserUseCase(producer *kafka.Producer) ParserUseCase {
 }
 
 func (p *parserUseCase) ProduceMessage(toSend model.FunctionMetadata) error {
+	log.Printf("trying to produce: %s", toSend.ToString())
 	return p.producer.Produce("functions", []byte(toSend.ToString()))
 }
 
@@ -82,6 +84,7 @@ func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]model.Funct
 			comment = function.Doc.Text()
 		}
 
+		log.Printf("got the signature: %s, %s", signature, function.Name.Name)
 		functions = append(functions, model.FunctionMetadata{
 			Name:      function.Name.Name,
 			Signature: signature,

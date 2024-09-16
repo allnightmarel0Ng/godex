@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	db, err := postgres.NewDatabase("user=admin dbname=godex password=admin sslmode=disable")
+	db, err := postgres.NewDatabase("user=admin dbname=godex password=admin sslmode=disable host=postgres port=5432")
 	if err != nil {
 		log.Fatalf("unable to connect to the database: %s", err.Error())
 	}

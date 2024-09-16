@@ -1,6 +1,7 @@
 package main
 
 import (
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net/http"
 
@@ -14,14 +15,14 @@ import (
 )
 
 func main() {
-	parserConn, err := grpc.NewClient("localhost:5000")
+	parserConn, err := grpc.NewClient("parser:5000", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("unable to create the grpc client: %s", err.Error())
 	}
 	defer parserConn.Close()
 	parserClient := parserpb.NewParserClient(parserConn)
 
-	containerConn, err := grpc.NewClient("localhost:5051")
+	containerConn, err := grpc.NewClient("container:5001", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("unable to create the grpc client: %s", err.Error())
 	}

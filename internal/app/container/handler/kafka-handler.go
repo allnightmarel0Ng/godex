@@ -25,11 +25,11 @@ func (c *ContainerKafkaHandler) Handle() {
 	for {
 		msg, err := c.consumer.Consume(time.Second)
 		if err == nil {
-			functionInfo := msg.String()
+			functionInfo := string(msg.Value)
 			log.Printf("got new function: %s", functionInfo)
 			err = c.useCase.ProcessNewFunction(functionInfo)
 			if err != nil {
-				log.Printf("got an error whule storing the new function: %s", err.Error())
+				log.Printf("got an error while storing the new function: %s", err.Error())
 			}
 		} else if !err.(confluentkafka.Error).IsTimeout() {
 			log.Printf("consumer error: %s", err.Error())

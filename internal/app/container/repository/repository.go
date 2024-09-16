@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"errors"
 
 	"github.com/allnightmarel0Ng/godex/internal/domain/model"
@@ -25,29 +26,20 @@ func NewContainerRepository(db *postgres.Database) ContainerRepository {
 func (c *containerRepository) InsertFunction(metadata model.FunctionMetadata) error {
 	var packageID int64
 	row := c.db.QueryRow(
-		"SELECT id FROM public.packages WHERE name == $1 AND link == $2;",
+		"SELECT id FROM public.packages WHERE name = $1 AND link = $2;",
 		metadata.File.Package.Name,
 		metadata.File.Package.Link)
-	if row == nil {
-		result, err := c.db.Exec(
+	err := row.Scan(&packageID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+
+		err = c.db.QueryRow(
 			"INSERT INTO public.packages (name, link) VALUES ($1, $2);",
 			metadata.File.Package.Name,
-			metadata.File.Package.Link)
+			metadata.File.Package.Link).Scan(&packageID)
 
-		if err != nil {
-			return err
-		}
-
-		if result == nil {
-			return errors.New("unable to INSERT new package in to database")
-		}
-
-		packageID, err = result.LastInsertId()
-		if err != nil {
-			return err
-		}
-	} else {
-		err := row.Scan(&packageID)
 		if err != nil {
 			return err
 		}
@@ -55,43 +47,40 @@ func (c *containerRepository) InsertFunction(metadata model.FunctionMetadata) er
 
 	var fileID int64
 	row = c.db.QueryRow(
-		"SELECT id FROM public.files WHERE name == $1 AND package_id == $2;",
+		"SELECT id FROM public.files WHERE name = $1 AND package_id = $2;",
 		metadata.File.Name,
 		packageID)
-	if row == nil {
-		result, err := c.db.Exec(
-			"INSERT INTO public.files (name, link) VALUES ($1, $2);",
+	err = row.Scan(&fileID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+
+		err = c.db.QueryRow(
+			"INSERT INTO public.files (name, package_id) VALUES ($1, $2);",
 			metadata.File.Name,
-			fileID)
+			packageID).Scan(&fileID)
 
-		if err != nil {
-			return err
-		}
-
-		if result == nil {
-			return errors.New("unable to INSERT new file in to database")
-		}
-
-		fileID, err = result.LastInsertId()
-		if err != nil {
-			return err
-		}
-	} else {
-		err := row.Scan(&fileID)
 		if err != nil {
 			return err
 		}
 	}
 
+	var functionID int
 	row = c.db.QueryRow(
-		"SELECT id FROM public.functions WHERE name == $1 AND signature == $2 AND file_id == $3 AND comment == $4;",
+		"SELECT id FROM public.functions WHERE name = $1 AND signature = $2 AND file_id = $3 AND comment = $4;",
 		metadata.Name, metadata.Signature, fileID, metadata.Comment)
-	if row == nil {
-		result, err := c.db.Exec(
+	err = row.Scan(&functionID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+
+		result, execErr := c.db.Exec(
 			"INSERT INTO public.functions (name, signature, file_id, comment) VALUES ($1, $2, $3, $4);",
 			metadata.Name, metadata.Signature, fileID, metadata.Comment)
 
-		if err != nil {
+		if execErr != nil {
 			return err
 		}
 
@@ -104,7 +93,7 @@ func (c *containerRepository) InsertFunction(metadata model.FunctionMetadata) er
 }
 
 func (c *containerRepository) GetFunctionBySignature(signature string) ([]model.FunctionMetadata, error) {
-	rows, err := c.db.Query("SELECT * FROM public.functions WHERE signature == $1;", signature)
+	rows, err := c.db.Query("SELECT * FROM public.functions WHERE signature = $1;", signature)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +112,7 @@ func (c *containerRepository) GetFunctionBySignature(signature string) ([]model.
 			return nil, err
 		}
 
-		row := c.db.QueryRow("SELECT * FROM public.files WHERE id == $1;", fileID)
+		row := c.db.QueryRow("SELECT * FROM public.files WHERE id = $1;", fileID)
 		if row == nil {
 			return nil, errors.New("file for such signature wasn't found")
 		}
@@ -135,7 +124,7 @@ func (c *containerRepository) GetFunctionBySignature(signature string) ([]model.
 			return nil, err
 		}
 
-		row = c.db.QueryRow("SELECT * FROM public.packages WHERE id == $1;", packageID)
+		row = c.db.QueryRow("SELECT * FROM public.packages WHERE id = $1;", packageID)
 		if row == nil {
 			return nil, errors.New("package for such signature wasn't found")
 		}
