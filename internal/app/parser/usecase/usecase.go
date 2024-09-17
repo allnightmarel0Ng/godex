@@ -1,10 +1,11 @@
 package usecase
 
 import (
+	"bytes"
 	"errors"
-	"fmt"
 	"go/ast"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"log"
 	"net/url"
@@ -83,29 +84,29 @@ func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]model.Funct
 			return true
 		}
 
-		var signature string
+		var signature bytes.Buffer
 		if function.Type.Params != nil {
-			signature += "("
+			signature.WriteString("(")
 			for i, params := range function.Type.Params.List {
 				if i > 0 {
-					signature += ","
+					signature.WriteString(",")
 				}
-				signature += fmt.Sprintf("%s", params.Type)
+				printer.Fprint(&signature, fset, params.Type)
 			}
-			signature += ")"
+			signature.WriteString(")")
 		}
 		if function.Type.Results != nil {
 			if len(function.Type.Results.List) > 1 {
-				signature += "("
+				signature.WriteString("(")
 			}
 			for i, results := range function.Type.Results.List {
 				if i > 0 {
-					signature += ","
+					signature.WriteString(",")
 				}
-				signature += fmt.Sprintf("%s", results.Type)
+				printer.Fprint(&signature, fset, results.Type)
 			}
 			if len(function.Type.Results.List) > 1 {
-				signature += ")"
+				signature.WriteString(")")
 			}
 		}
 		comment := "NoComment"
@@ -113,10 +114,10 @@ func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]model.Funct
 			comment = function.Doc.Text()
 		}
 
-		log.Printf("got the signature: %s, %s", signature, function.Name.Name)
+		log.Printf("got the signature: %s, %s", signature.String(), function.Name.Name)
 		functions = append(functions, model.FunctionMetadata{
 			Name:      function.Name.Name,
-			Signature: signature,
+			Signature: strings.Replace(signature.String(), " ", "", -1),
 			Comment:   comment,
 			File: model.FileMetadata{
 				Name: fileName,

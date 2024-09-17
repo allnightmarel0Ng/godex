@@ -39,13 +39,13 @@ func (c *containerUseCase) ProcessNewFunction(function string) error {
 				Link: tokens[4],
 			},
 		},
-		Comment: tokens[5],
+		Comment: strings.Join(tokens[5:], " "),
 	}
 
 	return c.repo.InsertFunction(metadata)
 }
 
 func (c *containerUseCase) ProcessGetFunction(signature string) ([]model.FunctionMetadata, error) {
-	strings.TrimSpace(signature)
+	strings.Replace(signature, " ", "", -1)
 	return c.repo.GetFunctionBySignature(signature)
 }
