@@ -1,7 +1,6 @@
 package main
 
 import (
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net/http"
 
@@ -9,20 +8,27 @@ import (
 	"github.com/allnightmarel0Ng/godex/internal/app/entrypoint/handler"
 	"github.com/allnightmarel0Ng/godex/internal/app/entrypoint/usecase"
 	parserpb "github.com/allnightmarel0Ng/godex/internal/app/parser/proto"
+	"github.com/allnightmarel0Ng/godex/internal/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
-	parserConn, err := grpc.NewClient("parser:5000", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conf, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("unable to load config")
+	}
+
+	parserConn, err := grpc.NewClient("parser:"+conf.ParserPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("unable to create the grpc client: %s", err.Error())
 	}
 	defer parserConn.Close()
 	parserClient := parserpb.NewParserClient(parserConn)
 
-	containerConn, err := grpc.NewClient("container:5001", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	containerConn, err := grpc.NewClient("container:"+conf.ContainerPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("unable to create the grpc client: %s", err.Error())
 	}
@@ -38,7 +44,7 @@ func main() {
 	router.Post("/store", handle.HandleStore)
 	router.Get("/find", handle.HandleFind)
 
-	err = http.ListenAndServe(":8080", router)
+	err = http.ListenAndServe(":"+conf.EntrypointPort, router)
 	if err != nil {
 		log.Fatalf("unable to listen and serve: %s", err.Error())
 	}
