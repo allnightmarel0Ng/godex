@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 	"errors"
-
 	"github.com/allnightmarel0Ng/godex/internal/domain/model"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/postgres"
 )
@@ -36,7 +35,7 @@ func (c *containerRepository) InsertFunction(metadata model.FunctionMetadata) er
 		}
 
 		err = c.db.QueryRow(
-			"INSERT INTO public.packages (name, link) VALUES ($1, $2);",
+			"INSERT INTO public.packages (name, link) VALUES ($1, $2) RETURNING id;",
 			metadata.File.Package.Name,
 			metadata.File.Package.Link).Scan(&packageID)
 
@@ -57,7 +56,7 @@ func (c *containerRepository) InsertFunction(metadata model.FunctionMetadata) er
 		}
 
 		err = c.db.QueryRow(
-			"INSERT INTO public.files (name, package_id) VALUES ($1, $2);",
+			"INSERT INTO public.files (name, package_id) VALUES ($1, $2) RETURNING id;",
 			metadata.File.Name,
 			packageID).Scan(&fileID)
 
@@ -66,27 +65,14 @@ func (c *containerRepository) InsertFunction(metadata model.FunctionMetadata) er
 		}
 	}
 
-	var functionID int
-	row = c.db.QueryRow(
-		"SELECT id FROM public.functions WHERE name = $1 AND signature = $2 AND file_id = $3 AND comment = $4;",
-		metadata.Name, metadata.Signature, fileID, metadata.Comment)
-	err = row.Scan(&functionID)
+	// Use RETURNING clause to get the ID of the newly inserted function
+	var functionID int64
+	err = c.db.QueryRow(
+		"INSERT INTO public.functions (name, signature, file_id, comment) VALUES ($1, $2, $3, $4) RETURNING id;",
+		metadata.Name, metadata.Signature, fileID, metadata.Comment).Scan(&functionID)
+
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return err
-		}
-
-		result, execErr := c.db.Exec(
-			"INSERT INTO public.functions (name, signature, file_id, comment) VALUES ($1, $2, $3, $4);",
-			metadata.Name, metadata.Signature, fileID, metadata.Comment)
-
-		if execErr != nil {
-			return err
-		}
-
-		if result == nil {
-			return errors.New("unable to INSERT new function in to database")
-		}
+		return err
 	}
 
 	return nil
