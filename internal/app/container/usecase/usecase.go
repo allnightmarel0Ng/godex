@@ -25,21 +25,21 @@ func NewContainerUseCase(repo repository.ContainerRepository) ContainerUseCase {
 
 func (c *containerUseCase) ProcessNewFunction(function string) error {
 	tokens := strings.Split(function, " ")
-	if len(tokens) != 6 {
+	if len(tokens) < 6 {
 		return errors.New("invalid function")
 	}
 
 	metadata := model.FunctionMetadata{
 		Name:      tokens[0],
 		Signature: tokens[1],
-		Comment:   tokens[2],
 		File: model.FileMetadata{
-			Name: tokens[3],
+			Name: tokens[2],
 			Package: model.PackageMetadata{
-				Name: tokens[4],
-				Link: tokens[5],
+				Name: tokens[3],
+				Link: tokens[4],
 			},
 		},
+		Comment: tokens[5],
 	}
 
 	return c.repo.InsertFunction(metadata)

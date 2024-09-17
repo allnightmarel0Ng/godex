@@ -28,5 +28,5 @@ type FunctionMetadata struct {
 }
 
 func (f *FunctionMetadata) ToString() string {
-	return fmt.Sprintf("%s %s %s %s", f.Name, f.Signature, f.Comment, f.File.ToString())
+	return fmt.Sprintf("%s %s %s %s", f.Name, f.Signature, f.File.ToString(), f.Comment)
 }

@@ -57,14 +57,16 @@ func (e *EntrypointHandler) HandleFind(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &signature)
 	if err != nil {
 		http.Error(w, "Error parsing JSON", http.StatusBadRequest)
+		return
 	}
 
 	functions, err := e.useCase.Find(signature.Signature)
-	if err != nil {
-		http.Error(w, "Error finding signature", http.StatusInternalServerError)
+	if err != nil || functions == nil {
+		http.Error(w, "Error finding signature", http.StatusBadRequest)
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(functions)
 }

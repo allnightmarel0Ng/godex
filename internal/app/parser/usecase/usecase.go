@@ -1,11 +1,13 @@
 package usecase
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"log"
+	"net/url"
 	"strings"
 
 	"github.com/allnightmarel0Ng/godex/internal/domain/model"
@@ -18,12 +20,14 @@ type ParserUseCase interface {
 }
 
 type parserUseCase struct {
-	producer *kafka.Producer
+	producer  *kafka.Producer
+	whiteList []string
 }
 
-func NewParserUseCase(producer *kafka.Producer) ParserUseCase {
+func NewParserUseCase(producer *kafka.Producer, whiteList []string) ParserUseCase {
 	return &parserUseCase{
-		producer: producer,
+		producer:  producer,
+		whiteList: whiteList,
 	}
 }
 
@@ -32,21 +36,46 @@ func (p *parserUseCase) ProduceMessage(toSend model.FunctionMetadata) error {
 	return p.producer.Produce("functions", []byte(toSend.ToString()))
 }
 
-func (p *parserUseCase) parseUrl(url string) (string, string, string) {
-	tokens := strings.Split(url, "/")
+func (p *parserUseCase) parseUrl(rawUrl string) (string, string, string, error) {
+	parsedUrl, err := url.Parse(rawUrl)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	if !strings.HasSuffix(parsedUrl.Path, ".go") {
+		return "", "", "", errors.New("unable to parse: not a .go file")
+	}
+
+	inWhiteList := false
+	for _, link := range p.whiteList {
+		if parsedUrl.Hostname() == link {
+			inWhiteList = true
+			break
+		}
+	}
+
+	if !inWhiteList {
+		return "", "", "", errors.New("unable to parse: not in whitelist")
+	}
+
+	tokens := strings.Split(rawUrl, "/")
 	tokensLength := len(tokens)
 
-	return tokens[tokensLength-1], tokens[tokensLength-2], url
+	return tokens[tokensLength-1], tokens[tokensLength-2], rawUrl, nil
 }
 
 func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]model.FunctionMetadata, error) {
+	fileName, packageName, link, err := p.parseUrl(url)
+	if err != nil {
+		return nil, err
+	}
+
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "", code, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
 
-	fileName, packageName, link := p.parseUrl(url)
 	var functions []model.FunctionMetadata
 	ast.Inspect(file, func(n ast.Node) bool {
 		function, ok := n.(*ast.FuncDecl)
@@ -79,7 +108,7 @@ func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]model.Funct
 				signature += ")"
 			}
 		}
-		comment := ""
+		comment := "NoComment"
 		if function.Doc != nil {
 			comment = function.Doc.Text()
 		}

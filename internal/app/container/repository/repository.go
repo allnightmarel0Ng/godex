@@ -65,7 +65,6 @@ func (c *containerRepository) InsertFunction(metadata model.FunctionMetadata) er
 		}
 	}
 
-	// Use RETURNING clause to get the ID of the newly inserted function
 	var functionID int64
 	err = c.db.QueryRow(
 		"INSERT INTO public.functions (name, signature, file_id, comment) VALUES ($1, $2, $3, $4) RETURNING id;",

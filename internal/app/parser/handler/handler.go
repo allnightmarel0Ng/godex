@@ -35,16 +35,16 @@ func (p *ParserHandler) Download(ctx context.Context, in *pb.LinkRequest) (*pb.S
 	bytes, err := p.fetchFile(url)
 	if err != nil {
 		return &pb.StatusReply{
-			Status:  404,
-			Message: "unable to fetch the data from link",
+			Status:  http.StatusUnprocessableEntity,
+			Message: err.Error(),
 		}, fmt.Errorf("unable to fetch the data from link: %s", err.Error())
 	}
 
 	functions, err := p.UseCase.ExtractFunctions(bytes, url)
 	if err != nil {
 		return &pb.StatusReply{
-			Status:  405,
-			Message: "unable to get functions from file",
+			Status:  http.StatusUnprocessableEntity,
+			Message: err.Error(),
 		}, fmt.Errorf("unable to get functions from file: %s", err.Error())
 	}
 
@@ -56,7 +56,7 @@ func (p *ParserHandler) Download(ctx context.Context, in *pb.LinkRequest) (*pb.S
 	}
 
 	return &pb.StatusReply{
-		Status:  200,
+		Status:  http.StatusOK,
 		Message: "OK",
 	}, nil
 }
