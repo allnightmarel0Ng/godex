@@ -1,0 +1,2 @@
+*.sql linguist-detectable=true
+*.proto linguist-detectable=true
