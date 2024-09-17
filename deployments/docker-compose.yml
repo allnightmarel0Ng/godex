@@ -66,7 +66,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "5432" ]
+      test: ["CMD-SHELL", "pg_isready -U admin -d godex"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -82,10 +82,10 @@ services:
     command: |
       "
       echo 'Postgres is up - executing initialization script'
-      psql -h postgres -U admin -d godex -c 'DROP TABLE IF EXISTS public.packages; CREATE TABLE public.packages (id SERIAL PRIMARY KEY, name VARCHAR(128) NOT NULL, link VARCHAR(256) NOT NULL);'
-      psql -h postgres -U admin -d godex -c 'DROP TABLE IF EXISTS public.files; CREATE TABLE public.files (id SERIAL PRIMARY KEY, name VARCHAR(128) NOT NULL, package_id INT REFERENCES public.packages(id) ON DELETE CASCADE);'
-      psql -h postgres -U admin -d godex -c 'DROP TABLE IF EXISTS public.functions; CREATE TABLE public.functions (id SERIAL PRIMARY KEY, name VARCHAR(128) NOT NULL, signature VARCHAR(128) NOT NULL, file_id INT REFERENCES public.files(id) ON DELETE CASCADE, comment TEXT);'
+      psql -h postgres -U admin -d godex -f /scripts/init-db.sql
       "
+    volumes:
+      - ../scripts:/scripts
 
   parser:
     build:
