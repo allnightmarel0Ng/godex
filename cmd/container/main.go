@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net"
 
@@ -8,13 +10,19 @@ import (
 	pb "github.com/allnightmarel0Ng/godex/internal/app/container/proto"
 	"github.com/allnightmarel0Ng/godex/internal/app/container/repository"
 	"github.com/allnightmarel0Ng/godex/internal/app/container/usecase"
+	"github.com/allnightmarel0Ng/godex/internal/config"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/kafka"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/postgres"
 	"google.golang.org/grpc"
 )
 
 func main() {
-	db, err := postgres.NewDatabase("user=admin dbname=godex password=admin sslmode=disable host=postgres port=5432")
+	conf, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("unable to load config")
+	}
+
+	db, err := postgres.NewDatabase(context.Background(), fmt.Sprintf("postgresql://%s:%s@postgres:%s/%s?sslmode=disable", conf.PostgresUser, conf.PostgresPassword, conf.PostgresPort, conf.PostgresName))
 	if err != nil {
 		log.Fatalf("unable to connect to the database: %s", err.Error())
 	}

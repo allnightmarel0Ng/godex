@@ -1,10 +1,11 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
 	"errors"
 	"github.com/allnightmarel0Ng/godex/internal/domain/model"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/postgres"
+	"github.com/jackc/pgx/v4"
 )
 
 type ContainerRepository interface {
@@ -23,19 +24,34 @@ func NewContainerRepository(db *postgres.Database) ContainerRepository {
 }
 
 func (c *containerRepository) InsertFunction(metadata model.FunctionMetadata) error {
-	var packageID int64
-	row := c.db.QueryRow(
-		"SELECT id FROM public.packages WHERE name = $1 AND link = $2;",
-		metadata.File.Package.Name,
-		metadata.File.Package.Link)
-	err := row.Scan(&packageID)
+	ctx := context.Background()
+
+	tx, err := c.db.Begin(ctx)
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback(ctx)
+			panic(p)
+		} else if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
+
+	var packageID int64
+	err = tx.QueryRow(ctx, "SELECT id FROM public.packages WHERE name = $1 AND link = $2;",
+		metadata.File.Package.Name,
+		metadata.File.Package.Link).Scan(&packageID)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
 
-		err = c.db.QueryRow(
-			"INSERT INTO public.packages (name, link) VALUES ($1, $2) RETURNING id;",
+		err = tx.QueryRow(ctx, "INSERT INTO public.packages (name, link) VALUES ($1, $2) RETURNING id;",
 			metadata.File.Package.Name,
 			metadata.File.Package.Link).Scan(&packageID)
 
@@ -45,18 +61,15 @@ func (c *containerRepository) InsertFunction(metadata model.FunctionMetadata) er
 	}
 
 	var fileID int64
-	row = c.db.QueryRow(
-		"SELECT id FROM public.files WHERE name = $1 AND package_id = $2;",
+	err = tx.QueryRow(ctx, "SELECT id FROM public.files WHERE name = $1 AND package_id = $2;",
 		metadata.File.Name,
-		packageID)
-	err = row.Scan(&fileID)
+		packageID).Scan(&fileID)
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
+		if !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
 
-		err = c.db.QueryRow(
-			"INSERT INTO public.files (name, package_id) VALUES ($1, $2) RETURNING id;",
+		err = tx.QueryRow(ctx, "INSERT INTO public.files (name, package_id) VALUES ($1, $2) RETURNING id;",
 			metadata.File.Name,
 			packageID).Scan(&fileID)
 
@@ -66,15 +79,14 @@ func (c *containerRepository) InsertFunction(metadata model.FunctionMetadata) er
 	}
 
 	var functionID int64
-	err = c.db.QueryRow(
-		"INSERT INTO public.functions (name, signature, file_id, comment) VALUES ($1, $2, $3, $4) RETURNING id;",
+	err = tx.QueryRow(ctx, "SELECT id FROM public.functions WHERE name = $1 AND signature = $2 AND file_id = $3 AND comment = $4;",
 		metadata.Name, metadata.Signature, fileID, metadata.Comment).Scan(&functionID)
-
 	if err != nil {
-		return err
+		_, err = tx.Exec(ctx, "INSERT INTO public.functions (name, signature, file_id, comment) VALUES ($1, $2, $3, $4);",
+			metadata.Name, metadata.Signature, fileID, metadata.Comment)
 	}
 
-	return nil
+	return err
 }
 
 func (c *containerRepository) GetFunctionBySignature(signature string) ([]model.FunctionMetadata, error) {
@@ -97,28 +109,15 @@ func (c *containerRepository) GetFunctionBySignature(signature string) ([]model.
 			return nil, err
 		}
 
-		row := c.db.QueryRow("SELECT * FROM public.files WHERE id = $1;", fileID)
-		if row == nil {
-			return nil, errors.New("file for such signature wasn't found")
-		}
-
 		var fileName string
 		var packageID int
-		err = row.Scan(&fileID, &fileName, &packageID)
+		err = c.db.QueryRow("SELECT * FROM public.files WHERE id = $1;", fileID).Scan(&fileID, &fileName, &packageID)
 		if err != nil {
 			return nil, err
-		}
-
-		row = c.db.QueryRow("SELECT * FROM public.packages WHERE id = $1;", packageID)
-		if row == nil {
-			return nil, errors.New("package for such signature wasn't found")
 		}
 
 		var packageName, link string
-		err = row.Scan(&packageID, &packageName, &link)
-		if err != nil {
-			return nil, err
-		}
+		err = c.db.QueryRow("SELECT * FROM public.packages WHERE id = $1;", packageID).Scan(&packageID, &packageName, &link)
 
 		result = append(result, model.FunctionMetadata{
 			Name:      functionName,
@@ -134,5 +133,5 @@ func (c *containerRepository) GetFunctionBySignature(signature string) ([]model.
 		})
 	}
 
-	return result, nil
+	return result, err
 }

@@ -30,6 +30,8 @@ func (c *ContainerKafkaHandler) Handle() {
 			err = c.useCase.ProcessNewFunction(functionInfo)
 			if err != nil {
 				log.Printf("got an error while storing the new function: %s", err.Error())
+			} else {
+				log.Printf("new function was inserted successfully")
 			}
 		} else if !err.(confluentkafka.Error).IsTimeout() {
 			log.Printf("consumer error: %s", err.Error())

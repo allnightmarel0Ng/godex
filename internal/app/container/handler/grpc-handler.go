@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"log"
 
 	pb "github.com/allnightmarel0Ng/godex/internal/app/container/proto"
 	"github.com/allnightmarel0Ng/godex/internal/app/container/usecase"
@@ -16,6 +17,7 @@ func (c *ContainerGRPCHandler) Find(ctx context.Context, in *pb.SignatureRequest
 	signature := in.GetSignature()
 	metadatas, err := c.UseCase.ProcessGetFunction(signature)
 	if err != nil {
+		log.Printf("error while finding signature: %s", err.Error())
 		return nil, err
 	}
 
