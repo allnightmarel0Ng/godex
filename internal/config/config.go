@@ -8,12 +8,15 @@ import (
 )
 
 type Config struct {
-	EntrypointPort string
-	ParserPort     string
-	ContainerPort  string
-	KafkaBroker    string
-	PostgresPort   string
-	WhiteList      []string
+	EntrypointPort   string
+	ParserPort       string
+	ContainerPort    string
+	KafkaBroker      string
+	PostgresName     string
+	PostgresUser     string
+	PostgresPassword string
+	PostgresPort     string
+	WhiteList        []string
 }
 
 func LoadConfig() (*Config, error) {
@@ -30,11 +33,14 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &Config{
-		EntrypointPort: os.Getenv("ENTRYPOINT_PORT"),
-		ParserPort:     os.Getenv("PARSER_PORT"),
-		ContainerPort:  os.Getenv("CONTAINER_PORT"),
-		KafkaBroker:    os.Getenv("KAFKA_BROKER"),
-		PostgresPort:   os.Getenv("POSTGRES_PORT"),
-		WhiteList:      whiteList,
+		EntrypointPort:   os.Getenv("ENTRYPOINT_PORT"),
+		ParserPort:       os.Getenv("PARSER_PORT"),
+		ContainerPort:    os.Getenv("CONTAINER_PORT"),
+		KafkaBroker:      os.Getenv("KAFKA_BROKER"),
+		PostgresName:     os.Getenv("POSTGRES_NAME"),
+		PostgresUser:     os.Getenv("POSTGRES_USER"),
+		PostgresPassword: os.Getenv("POSTGRES_PASSWORD"),
+		PostgresPort:     os.Getenv("POSTGRES_PORT"),
+		WhiteList:        whiteList,
 	}, nil
 }
