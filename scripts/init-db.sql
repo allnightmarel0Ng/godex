@@ -21,3 +21,5 @@ CREATE TABLE public.functions (
     file_id INT REFERENCES public.files(id) ON DELETE CASCADE,
     comment TEXT
 );
+
+CREATE INDEX ON public.functions(signature);
