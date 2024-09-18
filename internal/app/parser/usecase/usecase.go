@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/url"
 	"strings"
+	"unicode"
 
 	"github.com/allnightmarel0Ng/godex/internal/domain/model"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/kafka"
@@ -84,6 +85,10 @@ func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]model.Funct
 			return true
 		}
 
+		if !unicode.IsUpper(rune(function.Name.Name[0])) {
+			return true
+		}
+
 		var signature bytes.Buffer
 		if function.Type.Params != nil {
 			signature.WriteString("(")
@@ -114,7 +119,6 @@ func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]model.Funct
 			comment = function.Doc.Text()
 		}
 
-		log.Printf("got the signature: %s, %s", signature.String(), function.Name.Name)
 		functions = append(functions, model.FunctionMetadata{
 			Name:      function.Name.Name,
 			Signature: strings.Replace(signature.String(), " ", "", -1),
