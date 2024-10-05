@@ -2,10 +2,10 @@ package handler
 
 import (
 	"context"
-	"log"
 
 	pb "github.com/allnightmarel0Ng/godex/internal/app/container/proto"
 	"github.com/allnightmarel0Ng/godex/internal/app/container/usecase"
+	"github.com/allnightmarel0Ng/godex/internal/logger"
 )
 
 type ContainerGRPCHandler struct {
@@ -14,10 +14,13 @@ type ContainerGRPCHandler struct {
 }
 
 func (c *ContainerGRPCHandler) Find(ctx context.Context, in *pb.SignatureRequest) (*pb.FunctionsResponse, error) {
+	logger.Debug("Find: start")
+	defer logger.Debug("Find: end")
+
 	signature := in.GetSignature()
 	metadatas, err := c.UseCase.ProcessGetFunction(signature)
 	if err != nil {
-		log.Printf("error while finding signature: %s", err.Error())
+		logger.Warning("error while finding signature: %s", err.Error())
 		return nil, err
 	}
 

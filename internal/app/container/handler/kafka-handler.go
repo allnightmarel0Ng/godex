@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"log"
 	"time"
 
 	"github.com/allnightmarel0Ng/godex/internal/app/container/usecase"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/kafka"
+	"github.com/allnightmarel0Ng/godex/internal/logger"
 	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
@@ -22,19 +22,22 @@ func NewContainerKafkaHandler(consumer *kafka.Consumer, useCase usecase.Containe
 }
 
 func (c *ContainerKafkaHandler) Handle() {
+	logger.Debug("Handle: start")
+	defer logger.Debug("Handle: end")
+
 	for {
 		msg, err := c.consumer.Consume(time.Second)
 		if err == nil {
 			functionInfo := string(msg.Value)
-			log.Printf("got new function: %s", functionInfo)
+			logger.Trace("got new function: %s", functionInfo)
 			err = c.useCase.ProcessNewFunction(functionInfo)
 			if err != nil {
-				log.Printf("got an error while storing the new function: %s", err.Error())
+				logger.Warning("got an error while storing the new function: %s", err.Error())
 			} else {
-				log.Printf("new function was inserted successfully")
+				logger.Trace("new function was inserted successfully")
 			}
 		} else if !err.(confluentkafka.Error).IsTimeout() {
-			log.Printf("consumer error: %s", err.Error())
+			logger.Warning("consumer error: %s", err.Error())
 		}
 	}
 }

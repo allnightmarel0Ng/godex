@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	pb "github.com/allnightmarel0Ng/godex/internal/app/parser/proto"
 	"github.com/allnightmarel0Ng/godex/internal/app/parser/usecase"
+	"github.com/allnightmarel0Ng/godex/internal/logger"
 )
 
 type ParserHandler struct {
@@ -31,9 +31,13 @@ func (p *ParserHandler) fetchFile(url string) ([]byte, error) {
 }
 
 func (p *ParserHandler) Download(ctx context.Context, in *pb.LinkRequest) (*pb.StatusReply, error) {
+	logger.Debug("Download: start")
+	defer logger.Debug("Download: end")
+
 	url := in.GetLink()
 	bytes, err := p.fetchFile(url)
 	if err != nil {
+		logger.Warning("unable to fetch the data from link: %s", err.Error())
 		return &pb.StatusReply{
 			Status:  http.StatusUnprocessableEntity,
 			Message: err.Error(),
@@ -42,6 +46,7 @@ func (p *ParserHandler) Download(ctx context.Context, in *pb.LinkRequest) (*pb.S
 
 	functions, err := p.UseCase.ExtractFunctions(bytes, url)
 	if err != nil {
+		logger.Warning("unable to get functions from file: %s", err.Error())
 		return &pb.StatusReply{
 			Status:  http.StatusUnprocessableEntity,
 			Message: err.Error(),
@@ -51,7 +56,7 @@ func (p *ParserHandler) Download(ctx context.Context, in *pb.LinkRequest) (*pb.S
 	for _, function := range functions {
 		err = p.UseCase.ProduceMessage(function)
 		if err != nil {
-			log.Printf("producer error: %s", err.Error())
+			logger.Warning("producer error: %s", err.Error())
 		}
 	}
 

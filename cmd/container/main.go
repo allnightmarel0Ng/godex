@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 
 	"github.com/allnightmarel0Ng/godex/internal/app/container/handler"
@@ -13,18 +12,19 @@ import (
 	"github.com/allnightmarel0Ng/godex/internal/config"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/kafka"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/postgres"
+	"github.com/allnightmarel0Ng/godex/internal/logger"
 	"google.golang.org/grpc"
 )
 
 func main() {
 	conf, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("unable to load config")
+		logger.Error("unable to load config: %s", err.Error())
 	}
 
 	db, err := postgres.NewDatabase(context.Background(), fmt.Sprintf("postgresql://%s:%s@postgres:%s/%s?sslmode=disable", conf.PostgresUser, conf.PostgresPassword, conf.PostgresPort, conf.PostgresName))
 	if err != nil {
-		log.Fatalf("unable to connect to the database: %s", err.Error())
+		logger.Error("unable to connect to the database: %s", err.Error())
 	}
 	defer db.Close()
 
@@ -33,13 +33,13 @@ func main() {
 
 	consumer, err := kafka.NewConsumer("kafka:9092", "functions")
 	if err != nil {
-		log.Fatalf("unable to create kafka consumer: %s", err.Error())
+		logger.Error("unable to create kafka consumer: %s", err.Error())
 	}
 	defer consumer.Close()
 
 	err = consumer.SubscribeTopics([]string{"functions"})
 	if err != nil {
-		log.Fatalf("unable to subscribe kafka consumer on topic: %s", err.Error())
+		logger.Error("unable to subscribe kafka consumer on topic: %s", err.Error())
 	}
 
 	kafkaHandler := handler.NewContainerKafkaHandler(consumer, useCase)
@@ -47,7 +47,7 @@ func main() {
 
 	listener, err := net.Listen("tcp", ":5001")
 	if err != nil {
-		log.Fatalf("unable to listen on port 5001: %s", err.Error())
+		logger.Error("unable to listen on port 5001: %s", err.Error())
 	}
 
 	server := grpc.NewServer()
@@ -55,7 +55,7 @@ func main() {
 
 	err = server.Serve(listener)
 	if err != nil {
-		log.Fatalf("unable to serve on port 5001: %s", err.Error())
+		logger.Error("unable to serve on port 5001: %s", err.Error())
 	}
 
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/allnightmarel0Ng/godex/internal/app/entrypoint/usecase"
+	"github.com/allnightmarel0Ng/godex/internal/logger"
 )
 
 type EntrypointHandler struct {
@@ -19,9 +20,13 @@ func NewEntrypointHandler(useCase usecase.EntrypointUseCase) EntrypointHandler {
 }
 
 func (e *EntrypointHandler) HandleStore(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("HandleStore: start")
+	defer logger.Debug("HandleStore: end")
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading response body", http.StatusInternalServerError)
+		logger.Warning("error reading request body")
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
 		return
 	}
 	defer r.Body.Close()
@@ -31,12 +36,16 @@ func (e *EntrypointHandler) HandleStore(w http.ResponseWriter, r *http.Request) 
 	}
 	err = json.Unmarshal(body, &link)
 	if err != nil {
+		logger.Warning("error parsing JSON")
 		http.Error(w, "Error parsing JSON", http.StatusBadRequest)
+		return
 	}
 
 	code, message, err := e.useCase.Store(link.Link)
 	if err != nil {
+		logger.Warning("error downloading file from link")
 		http.Error(w, "Error downloading file from link", http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(int(code))
@@ -44,9 +53,13 @@ func (e *EntrypointHandler) HandleStore(w http.ResponseWriter, r *http.Request) 
 }
 
 func (e *EntrypointHandler) HandleFind(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("HandleFind: start")
+	defer logger.Debug("HandleFind: end")
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading response body", http.StatusInternalServerError)
+		logger.Warning("error reading request body")
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
 		return
 	}
 	defer r.Body.Close()
@@ -56,12 +69,14 @@ func (e *EntrypointHandler) HandleFind(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.Unmarshal(body, &signature)
 	if err != nil {
+		logger.Warning("error parsing JSON")
 		http.Error(w, "Error parsing JSON", http.StatusBadRequest)
 		return
 	}
 
 	functions, err := e.useCase.Find(signature.Signature)
 	if err != nil || functions == nil {
+		logger.Warning("error finding signature")
 		http.Error(w, "Error finding signature", http.StatusBadRequest)
 		return
 	}

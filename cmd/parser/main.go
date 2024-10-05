@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"github.com/allnightmarel0Ng/godex/internal/logger"
 	"net"
 
 	"github.com/allnightmarel0Ng/godex/internal/app/parser/handler"
@@ -15,18 +15,18 @@ import (
 func main() {
 	conf, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("unable to load config")
+		logger.Error("unable to load config: %s", err.Error())
 	}
 
 	listener, err := net.Listen("tcp", ":"+conf.ParserPort)
 	if err != nil {
-		log.Fatalf("unable to create the listener")
+		logger.Error("unable to create the listener: %s", err.Error())
 	}
 	defer listener.Close()
 
 	producer, err := kafka.NewProducer("kafka:" + conf.KafkaBroker)
 	if err != nil {
-		log.Fatalf("unable to create a kafka producer")
+		logger.Error("unable to create a kafka producer: %s", err.Error())
 	}
 	defer producer.Close()
 
@@ -37,6 +37,6 @@ func main() {
 	defer s.GracefulStop()
 
 	if err = s.Serve(listener); err != nil {
-		log.Fatalf("unable to start gRPC server: %s", err.Error())
+		logger.Error("unable to start gRPC server: %s", err.Error())
 	}
 }
