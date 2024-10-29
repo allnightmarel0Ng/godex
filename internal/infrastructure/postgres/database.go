@@ -41,6 +41,10 @@ func (d *Database) QueryRow(query string, args ...interface{}) pgx.Row {
 	return d.pool.QueryRow(d.ctx, query, args...)
 }
 
-func (d *Database) Begin(ctx context.Context) (pgx.Tx, error) {
-	return d.pool.Begin(ctx)
+func (d *Database) Begin(ctx context.Context) (Transaction, error) {
+	tx, err := d.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return newTransaction(ctx, tx), nil
 }
