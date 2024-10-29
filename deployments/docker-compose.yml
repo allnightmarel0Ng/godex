@@ -4,10 +4,10 @@ services:
     container_name: zookeeper
     hostname: zookeeper
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_PORT}
       ZOOKEEPER_TICK_TIME: 2000
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "2181" ]
+      test: [ "CMD", "nc", "-z", "localhost", "${ZOOKEEPER_PORT}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -17,19 +17,19 @@ services:
     container_name: kafka
     hostname: kafka
     ports:
-      - "9092:9092"
+      - ${KAFKA_BROKER}:${KAFKA_BROKER}
     depends_on:
       - zookeeper
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:${ZOOKEEPER_PORT}'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:${KAFKA_BROKER},PLAINTEXT_INTERNAL://kafka:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "9092" ]
+      test: [ "CMD", "nc", "-z", "localhost", "${KAFKA_BROKER}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -56,15 +56,15 @@ services:
       context: ..
       dockerfile: deployments/postgres/Dockerfile
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: godex
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_NAME}
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT_INCREMENTED}:${POSTGRES_PORT}"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d godex"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -75,12 +75,12 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      PGPASSWORD: admin
+      PGPASSWORD: ${POSTGRES_PASSWORD}
     entrypoint: [ "/bin/sh", "-c" ]
     command: |
       "
       echo 'Postgres is up - executing initialization script'
-      psql -h postgres -U admin -d godex -f /scripts/init-db.sql
+      psql -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_NAME} -f /scripts/init-db.sql
       "
     volumes:
       - ../scripts:/scripts
@@ -91,11 +91,11 @@ services:
       dockerfile: deployments/go/Dockerfile
       args:
         SERVICE_NAME: parser
-        SERVICE_PORT: 5000
+        SERVICE_PORT: ${PARSER_PORT}
     ports:
-      - "5000:5000"
+      - "${PARSER_PORT}:${PARSER_PORT}"
     environment:
-      - KAFKA_BROKER_SERV=kafka:9092
+      - KAFKA_BROKER_SERV=kafka:${KAFKA_BROKER}
     depends_on:
       kafka:
         condition: service_healthy
@@ -107,11 +107,11 @@ services:
       dockerfile: deployments/go/Dockerfile
       args:
         SERVICE_NAME: container
-        SERVICE_PORT: 5001
+        SERVICE_PORT: ${CONTAINER_PORT}
     ports:
-      - "5001:5001"
+      - "${CONTAINER_PORT}:${CONTAINER_PORT}"
     environment:
-      - KAFKA_BROKER_SERV=kafka:9092
+      - KAFKA_BROKER_SERV=kafka:${KAFKA_BROKER}
     depends_on:
       kafka:
         condition: service_healthy
@@ -125,9 +125,9 @@ services:
       dockerfile: deployments/go/Dockerfile
       args:
         SERVICE_NAME: entrypoint
-        SERVICE_PORT: 8080
+        SERVICE_PORT: ${ENTRYPOINT_PORT}
     ports:
-      - "8080:8080"
+      - "${ENTRYPOINT_PORT}:${ENTRYPOINT_PORT}"
     init: true
 
 volumes:
