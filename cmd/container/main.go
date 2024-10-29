@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	domainRepository "github.com/allnightmarel0Ng/godex/internal/domain/repository"
 	"github.com/allnightmarel0Ng/godex/internal/app/container/handler"
 	pb "github.com/allnightmarel0Ng/godex/internal/app/container/proto"
 	"github.com/allnightmarel0Ng/godex/internal/app/container/repository"
@@ -28,7 +29,10 @@ func main() {
 	}
 	defer db.Close()
 
-	repo := repository.NewContainerRepository(db)
+	repo := repository.NewContainerRepository(
+		domainRepository.NewFunctionRepository(db), 
+		domainRepository.NewFileRepository(db), 
+		domainRepository.NewPackageRepository(db))
 	useCase := usecase.NewContainerUseCase(repo)
 
 	consumer, err := kafka.NewConsumer("kafka:9092", "functions")
