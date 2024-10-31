@@ -13,10 +13,24 @@ type GatewayHandler struct {
 	useCase usecase.GatewayUseCase
 }
 
+type errorResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 func NewGatewayHandler(useCase usecase.GatewayUseCase) GatewayHandler {
 	return GatewayHandler{
 		useCase: useCase,
 	}
+}
+
+func (e *GatewayHandler) sendError(w http.ResponseWriter, code int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(errorResponse{
+		Code:    code,
+		Message: message,
+	})
 }
 
 func (e *GatewayHandler) HandleStore(w http.ResponseWriter, r *http.Request) {
@@ -24,15 +38,15 @@ func (e *GatewayHandler) HandleStore(w http.ResponseWriter, r *http.Request) {
 	defer logger.Debug("HandleStore: end")
 
 	if r.Header.Get("Content-Type") != "application/json" {
+		e.sendError(w, http.StatusBadRequest, "wrong content type: should be application/json")
 		logger.Warning("wrong content type")
-		http.Error(w, "wrong content type: should be application/json", http.StatusBadRequest)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		e.sendError(w, http.StatusInternalServerError, "error reading request body")
 		logger.Warning("error reading request body")
-		http.Error(w, "error reading request body", http.StatusInternalServerError)
 		return
 	}
 	defer r.Body.Close()
@@ -42,21 +56,21 @@ func (e *GatewayHandler) HandleStore(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.Unmarshal(body, &link)
 	if err != nil {
+		e.sendError(w, http.StatusBadRequest, "error parsing JSON")
 		logger.Warning("error parsing JSON")
-		http.Error(w, "error parsing JSON", http.StatusBadRequest)
 		return
 	}
 
 	code, message, err := e.useCase.Store(link.Link)
 	if err != nil {
+		e.sendError(w, http.StatusBadRequest, "unexpected error")
 		logger.Warning(message)
-		http.Error(w, "unexpected error", http.StatusInternalServerError)
 		return
 	}
 
 	if code != http.StatusOK {
+		e.sendError(w, int(code), message)
 		logger.Warning(message)
-		http.Error(w, message, int(code))
 		return
 	}
 
@@ -69,15 +83,15 @@ func (e *GatewayHandler) HandleFind(w http.ResponseWriter, r *http.Request) {
 	defer logger.Debug("HandleFind: end")
 
 	if r.Header.Get("Content-Type") != "application/json" {
+		e.sendError(w, http.StatusBadRequest, "wrong content type: should be application/json")
 		logger.Warning("wrong content type")
-		http.Error(w, "wrong content type: should be application/json", http.StatusBadRequest)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		e.sendError(w, http.StatusInternalServerError, "error reading request body")
 		logger.Warning("error reading request body")
-		http.Error(w, "error reading request body", http.StatusInternalServerError)
 		return
 	}
 	defer r.Body.Close()
@@ -87,15 +101,15 @@ func (e *GatewayHandler) HandleFind(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.Unmarshal(body, &signature)
 	if err != nil {
+		e.sendError(w, http.StatusBadRequest, "error parsing JSON")
 		logger.Warning("error parsing JSON")
-		http.Error(w, "error parsing JSON", http.StatusBadRequest)
 		return
 	}
 
 	functions, err := e.useCase.Find(signature.Signature)
 	if err != nil || functions == nil {
+		e.sendError(w, http.StatusNotFound, "error finding signature")
 		logger.Warning("error finding signature")
-		http.Error(w, "error finding signature", http.StatusNotFound)
 		return
 	}
 

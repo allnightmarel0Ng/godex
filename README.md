@@ -69,33 +69,54 @@ Provide the link to raw .go file (hostname must be from `WHITE_LIST`) and parser
   - **200 OK**
   - **500 Internal Server Error**
   
-    **Content-Type**: `text/plain`
+    **Content-Type**: `application/json`
+```json
+{
+  "code": 500,
+  "message": "unexpected server error"
+}
 ```
-unexpected server error
-```
-```
-error reading request body
+```json
+{
+  "code": 500,
+  "message": "error reading request body"
+}
 ```
   - **404 Not Found**
 
-    **Content-Type**: `text/plain`
-```
-unable to fetch the data from link: 404 Not Found
+    **Content-Type**: `application/json`
+```json
+{
+  "code": 404,
+  "message": "unable to fetch the data from link: 404 Not Found"
+}
 ```
   - **400 Bad Request**
 
-    **Content-Type**: `text/plain`
-```
-invalid link: not a .go file
+    **Content-Type**: `application/json`
+```json
+{
+  "code": 400,
+  "message": "invalid link: not a .go file"  
+}
 ``` 
-```
-invalid link: not in whitelist
+```json
+{
+  "code": 400,
+  "message": "invalid link: not in whitelist"
+}
 ``` 
+```json
+{
+  "code": 400,
+  "message": "wrong content type: should be application/json"
+}
 ```
-wrong content type: should be application/json
-```
-```
-error parsing JSON
+```json
+{
+  "code": 400,
+  "message": "error parsing JSON"
+}
 ```
 **Example**:
 ```bash
@@ -180,24 +201,36 @@ Provide the signature to find all the functions with such signature in database.
 ```
   - **500 Internal Server Error**
 
-    **Content-Type**: `text/plain`
-```
-error reading request body
+    **Content-Type**: `application/json`
+```json
+{
+  "code": 500,
+  "message": "error reading request body"
+}
 ```
   - **400 Bad Request**
 
-    **Content-Type**: `text/plain`
+    **Content-Type**: `application/json`
+```json
+{
+  "code": 400,
+  "message": "wrong content type: should be application/json"
+}
 ```
-wrong content type: should be application/json
-```
-```
-error parsing JSON
+```json
+{
+  "code": 400,
+  "message": "error parsing JSON"
+}
 ```
   - **404 Not Found**
 
-    **Content-Type**: `text/plain`
-```
-error finding signature
+    **Content-Type**: `application/json`
+```json
+{
+  "code": 404,
+  "message": "error finding signature"
+}
 ```
 
   
