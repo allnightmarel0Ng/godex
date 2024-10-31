@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	EntrypointPort   string
+	GatewayPort      string
 	ParserPort       string
 	ContainerPort    string
 	KafkaBroker      string
@@ -16,7 +16,7 @@ type Config struct {
 	PostgresUser     string
 	PostgresPassword string
 	PostgresPort     string
-	WhiteList        []string
+	WhiteList        map[string]bool
 }
 
 func LoadConfig() (*Config, error) {
@@ -26,14 +26,19 @@ func LoadConfig() (*Config, error) {
 	}
 
 	whiteListStr := os.Getenv("WHITE_LIST")
-	var whiteList []string
-	err = json.Unmarshal([]byte(whiteListStr), &whiteList)
+	var whiteListSlice []string
+	whiteList := make(map[string]bool)
+	err = json.Unmarshal([]byte(whiteListStr), &whiteListSlice)
 	if err != nil {
 		return nil, err
 	}
 
+	for _, link := range whiteListSlice {
+		whiteList[link] = true
+	}
+
 	return &Config{
-		EntrypointPort:   os.Getenv("ENTRYPOINT_PORT"),
+		GatewayPort:      os.Getenv("GATEWAY_PORT"),
 		ParserPort:       os.Getenv("PARSER_PORT"),
 		ContainerPort:    os.Getenv("CONTAINER_PORT"),
 		KafkaBroker:      os.Getenv("KAFKA_BROKER"),

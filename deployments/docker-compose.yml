@@ -119,15 +119,15 @@ services:
         condition: service_healthy
     init: true
 
-  entrypoint:
+  gateway:
     build:
       context: ..
       dockerfile: deployments/go/Dockerfile
       args:
-        SERVICE_NAME: entrypoint
-        SERVICE_PORT: ${ENTRYPOINT_PORT}
+        SERVICE_NAME: gateway
+        SERVICE_PORT: ${GATEWAY_PORT}
     ports:
-      - "${ENTRYPOINT_PORT}:${ENTRYPOINT_PORT}"
+      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
     init: true
 
 volumes:
