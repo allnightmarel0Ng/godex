@@ -13,7 +13,7 @@ type GatewayHandler struct {
 	useCase usecase.GatewayUseCase
 }
 
-type errorResponse struct {
+type response struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
@@ -27,7 +27,7 @@ func NewGatewayHandler(useCase usecase.GatewayUseCase) GatewayHandler {
 func (e *GatewayHandler) sendError(w http.ResponseWriter, code int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(errorResponse{
+	json.NewEncoder(w).Encode(response{
 		Code:    code,
 		Message: message,
 	})
@@ -61,21 +61,23 @@ func (e *GatewayHandler) HandleStore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	code, message, err := e.useCase.Store(link.Link)
+	payload, err := e.useCase.Store(link.Link)
 	if err != nil {
-		e.sendError(w, http.StatusBadRequest, "unexpected error")
-		logger.Warning(message)
+		e.sendError(w, http.StatusInternalServerError, "unexpected error")
+		logger.Warning("websocket error: %s", err.Error())
 		return
 	}
 
-	if code != http.StatusOK {
-		e.sendError(w, int(code), message)
-		logger.Warning(message)
+	var response response
+	if json.Unmarshal(payload, &response) != nil {
+		e.sendError(w, http.StatusInternalServerError, "unexpected error")
+		logger.Warning("json unmarshalling error")
 		return
 	}
-
-	w.WriteHeader(int(code))
-	w.Write([]byte(message))
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.Code)
+	w.Write(payload)
 }
 
 func (e *GatewayHandler) HandleFind(w http.ResponseWriter, r *http.Request) {
@@ -106,14 +108,20 @@ func (e *GatewayHandler) HandleFind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	functions, err := e.useCase.Find(signature.Signature)
-	if err != nil || functions == nil {
+	payload, err := e.useCase.Find(signature.Signature)
+	if err != nil || payload == nil || string(payload) == "NOT_FOUND" {
 		e.sendError(w, http.StatusNotFound, "error finding signature")
 		logger.Warning("error finding signature")
 		return
 	}
 
+	if string(payload) == "DB_ERROR" || string(payload) == "READ_ERROR" {
+		e.sendError(w, http.StatusInternalServerError, "unexpected error")
+		logger.Warning("container got an error: %s", string(payload))
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(functions)
+	w.Write(payload)
 }

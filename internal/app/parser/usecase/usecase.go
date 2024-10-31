@@ -11,6 +11,9 @@ import (
 	"net/url"
 	"strings"
 	"unicode"
+	"net/http"
+	"fmt"
+	"io"
 
 	"github.com/allnightmarel0Ng/godex/internal/domain/model"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/kafka"
@@ -20,6 +23,7 @@ type ParserUseCase interface {
 	ProduceMessage(toSend model.FunctionMetadata) error
 	ExtractFunctions(code []byte, fileName, packageName, link string) ([]model.FunctionMetadata, error)
 	ParseUrl(rawUrl string) (string, string, string, error)
+	FetchFile(url string) ([]byte, error)
 }
 
 type parserUseCase struct {
@@ -37,6 +41,20 @@ func NewParserUseCase(producer *kafka.Producer, whiteList map[string]bool) Parse
 func (p *parserUseCase) ProduceMessage(toSend model.FunctionMetadata) error {
 	log.Printf("trying to produce: %s", toSend.ToString())
 	return p.producer.Produce("functions", []byte(toSend.ToString()))
+}
+
+func (p *parserUseCase) FetchFile(url string) ([]byte, error) {
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s", response.Status)
+	}
+
+	return io.ReadAll(response.Body)
 }
 
 func (p *parserUseCase) ParseUrl(rawUrl string) (string, string, string, error) {
@@ -60,11 +78,6 @@ func (p *parserUseCase) ParseUrl(rawUrl string) (string, string, string, error) 
 }
 
 func (p *parserUseCase) ExtractFunctions(code []byte, fileName, packageName, link string) ([]model.FunctionMetadata, error) {
-	// fileName, packageName, link, err := p.ParseUrl(url)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "", code, parser.ParseComments)
 	if err != nil {

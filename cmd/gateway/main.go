@@ -2,16 +2,13 @@ package main
 
 import (
 	"net/http"
+	"net/url"
 
-	containerpb "github.com/allnightmarel0Ng/godex/internal/app/container/proto"
 	"github.com/allnightmarel0Ng/godex/internal/app/gateway/handler"
 	"github.com/allnightmarel0Ng/godex/internal/app/gateway/usecase"
-	parserpb "github.com/allnightmarel0Ng/godex/internal/app/parser/proto"
 	"github.com/allnightmarel0Ng/godex/internal/config"
 	"github.com/allnightmarel0Ng/godex/internal/logger"
 	"github.com/go-chi/chi/v5"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -20,21 +17,9 @@ func main() {
 		logger.Error("unable to load config: %s", err.Error())
 	}
 
-	parserConn, err := grpc.NewClient("parser:"+conf.ParserPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		logger.Error("unable to create the grpc client: %s", err.Error())
-	}
-	defer parserConn.Close()
-	parserClient := parserpb.NewParserClient(parserConn)
-
-	containerConn, err := grpc.NewClient("container:"+conf.ContainerPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		logger.Error("unable to create the grpc client: %s", err.Error())
-	}
-	defer containerConn.Close()
-	containerClient := containerpb.NewContainerClient(containerConn)
-
-	useCase := usecase.NewGatewayUseCase(parserClient, containerClient)
+	useCase := usecase.NewGatewayUseCase(
+		url.URL{Scheme: "ws", Host: "parser:"+conf.ParserPort, Path: "/"}, 
+		url.URL{Scheme: "ws", Host: "container:"+conf.ContainerPort, Path: "/"})
 	handle := handler.NewGatewayHandler(useCase)
 
 	router := chi.NewRouter()

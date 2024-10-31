@@ -120,11 +120,7 @@ Provide the link to raw .go file (hostname must be from `WHITE_LIST`) and parser
 ```
 **Example**:
 ```bash
-curl -X POST http://localhost:8080/store \
-     -H "Content-Type: application/json" \
-     -d '{
-           "link": "https://raw.githubusercontent.com/golang/go/master/src/bufio/bufio.go"
-         }'
+curl -X POST http://localhost:8080/store -H "Content-Type: application/json" -d '{"link": "https://raw.githubusercontent.com/golang/go/master/src/bufio/bufio.go"}'
 ```
 
 ### Find
@@ -232,8 +228,7 @@ Provide the signature to find all the functions with such signature in database.
   "message": "error finding signature"
 }
 ```
-
-  
-## Architecture
-
-![](img/architecture.png)
+**Example**:
+```bash
+curl -X GET http://localhost:8080/find -H "Content-Type: application/json" -d '{"signature":"(string)(int,error)"}'
+```

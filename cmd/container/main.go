@@ -3,10 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"net"
+	"net/http"
 
 	"github.com/allnightmarel0Ng/godex/internal/app/container/handler"
-	pb "github.com/allnightmarel0Ng/godex/internal/app/container/proto"
 	"github.com/allnightmarel0Ng/godex/internal/app/container/repository"
 	"github.com/allnightmarel0Ng/godex/internal/app/container/usecase"
 	"github.com/allnightmarel0Ng/godex/internal/config"
@@ -14,7 +13,6 @@ import (
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/kafka"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/postgres"
 	"github.com/allnightmarel0Ng/godex/internal/logger"
-	"google.golang.org/grpc"
 )
 
 func main() {
@@ -49,17 +47,7 @@ func main() {
 	kafkaHandler := handler.NewContainerKafkaHandler(consumer, useCase)
 	go kafkaHandler.Handle()
 
-	listener, err := net.Listen("tcp", ":5001")
-	if err != nil {
-		logger.Error("unable to listen on port 5001: %s", err.Error())
-	}
-
-	server := grpc.NewServer()
-	pb.RegisterContainerServer(server, &handler.ContainerGRPCHandler{UseCase: useCase})
-
-	err = server.Serve(listener)
-	if err != nil {
-		logger.Error("unable to serve on port 5001: %s", err.Error())
-	}
-
+	wsHandler := handler.NewContainerWebSocketHandler(useCase)
+	http.Handle("/", wsHandler)
+	logger.Error("%s", http.ListenAndServe(":"+conf.ContainerPort, nil))
 }

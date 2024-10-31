@@ -1,79 +1,90 @@
 package handler
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
-	pb "github.com/allnightmarel0Ng/godex/internal/app/parser/proto"
 	"github.com/allnightmarel0Ng/godex/internal/app/parser/usecase"
 	"github.com/allnightmarel0Ng/godex/internal/logger"
+	"github.com/gorilla/websocket"
 )
 
+type response struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 type ParserHandler struct {
-	UseCase usecase.ParserUseCase
-	pb.UnimplementedParserServer
+	upgrader websocket.Upgrader
+	useCase  usecase.ParserUseCase
 }
 
-func (p *ParserHandler) fetchFile(url string) ([]byte, error) {
-	response, err := http.Get(url)
+func NewParserHandler(useCase usecase.ParserUseCase) ParserHandler {
+	return ParserHandler{
+		upgrader: websocket.Upgrader{},
+		useCase:  useCase,
+	}
+}
+
+func send(conn *websocket.Conn, code int, message string) {
+	bytes, _ := json.Marshal(response{
+		Code:    code,
+		Message: message,
+	})
+
+	if err := conn.WriteMessage(websocket.TextMessage, bytes); err != nil {
+		logger.Warning("unable to send the message: %s", err.Error())
+	}
+}
+
+func (p ParserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("ServeHTTP: start")
+	defer logger.Debug("ServeHTTP: end")
+
+	conn, err := p.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		return nil, err
+		logger.Warning("unable to set ws connection: %s", err.Error())
+		return
 	}
-	defer response.Body.Close()
+	defer conn.Close()
 
-	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s", response.Status)
+	_, url, err := conn.ReadMessage()
+	if err != nil {
+		logger.Info("disconnected")
+		return
 	}
 
-	return io.ReadAll(response.Body)
-}
-
-func (p *ParserHandler) Download(ctx context.Context, in *pb.LinkRequest) (*pb.StatusReply, error) {
-	logger.Debug("Download: start")
-	defer logger.Debug("Download: end")
-
-	url := in.GetLink()
-	fileName, packageName, link, err := p.UseCase.ParseUrl(url)
+	fileName, packageName, link, err := p.useCase.ParseUrl(string(url))
 	if err != nil {
 		message := fmt.Sprintf("invalid link: %s", err.Error())
 		logger.Warning(message)
-		return &pb.StatusReply{
-			Status:  http.StatusBadRequest,
-			Message: message,
-		}, nil
+		send(conn, http.StatusBadRequest, message)
+		return
 	}
 
-	bytes, err := p.fetchFile(url)
+	bytes, err := p.useCase.FetchFile(string(url))
 	if err != nil {
 		message := fmt.Sprintf("unable to fetch the data from link: %s", err.Error())
 		logger.Warning(message)
-		return &pb.StatusReply{
-			Status:  http.StatusNotFound,
-			Message: message,
-		}, nil
+		send(conn, http.StatusNotFound, message)
+		return
 	}
 
-	functions, err := p.UseCase.ExtractFunctions(bytes, fileName, packageName, link)
+	functions, err := p.useCase.ExtractFunctions(bytes, fileName, packageName, link)
 	if err != nil {
 		message := fmt.Sprintf("unable to get functions from file: %s", err.Error())
 		logger.Warning(message)
-		return &pb.StatusReply{
-			Status:  http.StatusInternalServerError,
-			Message: message,
-		}, nil
+		send(conn, http.StatusInternalServerError, message)
+		return
 	}
 
 	for _, function := range functions {
-		err = p.UseCase.ProduceMessage(function)
+		err = p.useCase.ProduceMessage(function)
 		if err != nil {
 			logger.Warning("producer error: %s", err.Error())
 		}
 	}
 
-	return &pb.StatusReply{
-		Status:  http.StatusOK,
-		Message: "success",
-	}, nil
+	send(conn, http.StatusOK, "success")
 }
