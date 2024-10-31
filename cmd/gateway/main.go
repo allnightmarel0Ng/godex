@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	containerpb "github.com/allnightmarel0Ng/godex/internal/app/container/proto"
-	"github.com/allnightmarel0Ng/godex/internal/app/entrypoint/handler"
-	"github.com/allnightmarel0Ng/godex/internal/app/entrypoint/usecase"
+	"github.com/allnightmarel0Ng/godex/internal/app/gateway/handler"
+	"github.com/allnightmarel0Ng/godex/internal/app/gateway/usecase"
 	parserpb "github.com/allnightmarel0Ng/godex/internal/app/parser/proto"
 	"github.com/allnightmarel0Ng/godex/internal/config"
 	"github.com/allnightmarel0Ng/godex/internal/logger"
@@ -34,15 +34,15 @@ func main() {
 	defer containerConn.Close()
 	containerClient := containerpb.NewContainerClient(containerConn)
 
-	useCase := usecase.NewEntrypointUseCase(parserClient, containerClient)
-	handle := handler.NewEntrypointHandler(useCase)
+	useCase := usecase.NewGatewayUseCase(parserClient, containerClient)
+	handle := handler.NewGatewayHandler(useCase)
 
 	router := chi.NewRouter()
 
 	router.Post("/store", handle.HandleStore)
 	router.Get("/find", handle.HandleFind)
 
-	err = http.ListenAndServe(":"+conf.EntrypointPort, router)
+	err = http.ListenAndServe(":"+conf.GatewayPort, router)
 	if err != nil {
 		logger.Error("unable to listen and serve: %s", err.Error())
 	}

@@ -8,33 +8,29 @@ import (
 	"github.com/allnightmarel0Ng/godex/internal/domain/model"
 )
 
-type EntrypointUseCase interface {
+type GatewayUseCase interface {
 	Store(link string) (int32, string, error)
 	Find(signature string) ([]model.FunctionMetadata, error)
 }
 
-type entrypointUseCase struct {
+type gatewayUseCase struct {
 	toParser    parserpb.ParserClient
 	toContainer containerpb.ContainerClient
 }
 
-func NewEntrypointUseCase(ParserClient parserpb.ParserClient, ContainerClient containerpb.ContainerClient) EntrypointUseCase {
-	return &entrypointUseCase{
+func NewGatewayUseCase(ParserClient parserpb.ParserClient, ContainerClient containerpb.ContainerClient) GatewayUseCase {
+	return &gatewayUseCase{
 		toParser:    ParserClient,
 		toContainer: ContainerClient,
 	}
 }
 
-func (e *entrypointUseCase) Store(link string) (int32, string, error) {
+func (e *gatewayUseCase) Store(link string) (int32, string, error) {
 	response, err := e.toParser.Download(context.Background(), &parserpb.LinkRequest{Link: link})
-	if err != nil {
-		return 0, "", err
-	}
-
-	return response.GetStatus(), response.GetMessage(), nil
+	return response.GetStatus(), response.GetMessage(), err
 }
 
-func (e *entrypointUseCase) Find(signature string) ([]model.FunctionMetadata, error) {
+func (e *gatewayUseCase) Find(signature string) ([]model.FunctionMetadata, error) {
 	response, err := e.toContainer.Find(context.Background(), &containerpb.SignatureRequest{Signature: signature})
 	if err != nil {
 		return nil, err
