@@ -24,7 +24,7 @@ func (p *ParserHandler) fetchFile(url string) ([]byte, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch data: %s", response.Status)
+		return nil, fmt.Errorf("%s", response.Status)
 	}
 
 	return io.ReadAll(response.Body)
@@ -35,22 +35,34 @@ func (p *ParserHandler) Download(ctx context.Context, in *pb.LinkRequest) (*pb.S
 	defer logger.Debug("Download: end")
 
 	url := in.GetLink()
-	bytes, err := p.fetchFile(url)
+	fileName, packageName, link, err := p.UseCase.ParseUrl(url)
 	if err != nil {
-		logger.Warning("unable to fetch the data from link: %s", err.Error())
+		message := fmt.Sprintf("invalid link: %s", err.Error())
+		logger.Warning(message)
 		return &pb.StatusReply{
-			Status:  http.StatusUnprocessableEntity,
-			Message: err.Error(),
-		}, fmt.Errorf("unable to fetch the data from link: %s", err.Error())
+			Status:  http.StatusBadRequest,
+			Message: message,
+		}, nil
 	}
 
-	functions, err := p.UseCase.ExtractFunctions(bytes, url)
+	bytes, err := p.fetchFile(url)
 	if err != nil {
-		logger.Warning("unable to get functions from file: %s", err.Error())
+		message := fmt.Sprintf("unable to fetch the data from link: %s", err.Error())
+		logger.Warning(message)
 		return &pb.StatusReply{
-			Status:  http.StatusUnprocessableEntity,
-			Message: err.Error(),
-		}, fmt.Errorf("unable to get functions from file: %s", err.Error())
+			Status:  http.StatusNotFound,
+			Message: message,
+		}, nil
+	}
+
+	functions, err := p.UseCase.ExtractFunctions(bytes, fileName, packageName, link)
+	if err != nil {
+		message := fmt.Sprintf("unable to get functions from file: %s", err.Error())
+		logger.Warning(message)
+		return &pb.StatusReply{
+			Status:  http.StatusInternalServerError,
+			Message: message,
+		}, nil
 	}
 
 	for _, function := range functions {
@@ -62,6 +74,6 @@ func (p *ParserHandler) Download(ctx context.Context, in *pb.LinkRequest) (*pb.S
 
 	return &pb.StatusReply{
 		Status:  http.StatusOK,
-		Message: "OK",
+		Message: "success",
 	}, nil
 }

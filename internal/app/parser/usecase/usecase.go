@@ -18,15 +18,16 @@ import (
 
 type ParserUseCase interface {
 	ProduceMessage(toSend model.FunctionMetadata) error
-	ExtractFunctions(code []byte, url string) ([]model.FunctionMetadata, error)
+	ExtractFunctions(code []byte, fileName, packageName, link string) ([]model.FunctionMetadata, error)
+	ParseUrl(rawUrl string) (string, string, string, error)
 }
 
 type parserUseCase struct {
 	producer  *kafka.Producer
-	whiteList []string
+	whiteList map[string]bool
 }
 
-func NewParserUseCase(producer *kafka.Producer, whiteList []string) ParserUseCase {
+func NewParserUseCase(producer *kafka.Producer, whiteList map[string]bool) ParserUseCase {
 	return &parserUseCase{
 		producer:  producer,
 		whiteList: whiteList,
@@ -38,26 +39,18 @@ func (p *parserUseCase) ProduceMessage(toSend model.FunctionMetadata) error {
 	return p.producer.Produce("functions", []byte(toSend.ToString()))
 }
 
-func (p *parserUseCase) parseUrl(rawUrl string) (string, string, string, error) {
+func (p *parserUseCase) ParseUrl(rawUrl string) (string, string, string, error) {
 	parsedUrl, err := url.Parse(rawUrl)
 	if err != nil {
 		return "", "", "", err
 	}
 
 	if !strings.HasSuffix(parsedUrl.Path, ".go") {
-		return "", "", "", errors.New("unable to parse: not a .go file")
+		return "", "", "", errors.New("not a .go file")
 	}
 
-	inWhiteList := false
-	for _, link := range p.whiteList {
-		if parsedUrl.Hostname() == link {
-			inWhiteList = true
-			break
-		}
-	}
-
-	if !inWhiteList {
-		return "", "", "", errors.New("unable to parse: not in whitelist")
+	if !p.whiteList[parsedUrl.Hostname()] {
+		return "", "", "", errors.New("not in whitelist")
 	}
 
 	tokens := strings.Split(rawUrl, "/")
@@ -66,11 +59,11 @@ func (p *parserUseCase) parseUrl(rawUrl string) (string, string, string, error) 
 	return tokens[tokensLength-1], tokens[tokensLength-2], rawUrl, nil
 }
 
-func (p *parserUseCase) ExtractFunctions(code []byte, url string) ([]model.FunctionMetadata, error) {
-	fileName, packageName, link, err := p.parseUrl(url)
-	if err != nil {
-		return nil, err
-	}
+func (p *parserUseCase) ExtractFunctions(code []byte, fileName, packageName, link string) ([]model.FunctionMetadata, error) {
+	// fileName, packageName, link, err := p.ParseUrl(url)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "", code, parser.ParseComments)
