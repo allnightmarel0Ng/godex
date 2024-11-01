@@ -10,11 +10,11 @@ To configure the project create .env file with this variables:
 | Variable Name           | Description                                                                 |
 |-------------------------|-----------------------------------------------------------------------------|
 | `GATEWAY_PORT`       | Integer value representing the port where HTTP requests should go.         |
-| `PARSER_PORT`           | Port of the gRPC server implemented in the parser microservice.             |
-| `CONTAINER_PORT`        | Port of the gRPC server implemented in the container microservice.          |
+| `PARSER_PORT`           | Port of the WebSocket server implemented in the parser microservice.             |
+| `CONTAINER_PORT`        | Port of the WebSocket server implemented in the container microservice.          |
 | `KAFKA_BROKER`          | Apache Kafka port.                                                          |
 | `ZOOKEEPER_PORT`        | Zookeeper port.                                                             |
-| `POSTGRES_NAME`         | Postgres database name.                                                     |
+| `POSTGRES_DB`         | Postgres database name.                                                     |
 | `POSTGRES_USER`         | Postgres username.                                                          |
 | `POSTGRES_PASSWORD`     | Postgres password for the user.                                             |
 | `POSTGRES_PORT`         | Postgres port.                                                              |
