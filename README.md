@@ -1,7 +1,7 @@
 # godex
 [Hoogle](https://hoogle.haskell.org/)-like search engine for Go, literally Google
 
-## Quickstart
+## Quick Start
 
 ### Configure
 
