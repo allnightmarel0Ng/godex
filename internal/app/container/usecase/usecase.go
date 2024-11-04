@@ -46,6 +46,6 @@ func (c *containerUseCase) ProcessNewFunction(function string) error {
 }
 
 func (c *containerUseCase) ProcessGetFunction(signature string) ([]model.FunctionMetadata, error) {
-	strings.Replace(signature, " ", "", -1)
+	signature = strings.Replace(signature, " ", "", -1)
 	return c.repo.GetFunctionBySignature(signature)
 }

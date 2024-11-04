@@ -21,7 +21,7 @@ func main() {
 		logger.Error("unable to load config: %s", err.Error())
 	}
 
-	db, err := postgres.NewDatabase(context.Background(), fmt.Sprintf("postgresql://%s:%s@postgres:%s/%s?sslmode=disable", conf.PostgresUser, conf.PostgresPassword, conf.PostgresPort, conf.PostgresName))
+	db, err := postgres.NewDatabase(context.Background(), fmt.Sprintf("postgresql://%s:%s@postgres:%s/%s?sslmode=disable", conf.PostgresUser, conf.PostgresPassword, conf.PostgresPort, conf.PostgresDB))
 	if err != nil {
 		logger.Error("unable to connect to the database: %s", err.Error())
 	}

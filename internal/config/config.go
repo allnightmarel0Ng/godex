@@ -12,7 +12,7 @@ type Config struct {
 	ParserPort       string
 	ContainerPort    string
 	KafkaBroker      string
-	PostgresName     string
+	PostgresDB       string
 	PostgresUser     string
 	PostgresPassword string
 	PostgresPort     string
@@ -42,7 +42,7 @@ func LoadConfig() (*Config, error) {
 		ParserPort:       os.Getenv("PARSER_PORT"),
 		ContainerPort:    os.Getenv("CONTAINER_PORT"),
 		KafkaBroker:      os.Getenv("KAFKA_BROKER"),
-		PostgresName:     os.Getenv("POSTGRES_NAME"),
+		PostgresDB:       os.Getenv("POSTGRES_DB"),
 		PostgresUser:     os.Getenv("POSTGRES_USER"),
 		PostgresPassword: os.Getenv("POSTGRES_PASSWORD"),
 		PostgresPort:     os.Getenv("POSTGRES_PORT"),
