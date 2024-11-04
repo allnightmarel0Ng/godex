@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>godex</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>godex</h1>
+
+        <div class="section">
+            <h2>Store Go File</h2>
+            <form id="storeForm">
+                <label for="link">Link to Go File:</label>
+                <input type="text" id="link" name="link" required>
+                <button type="submit">Store</button>
+            </form>
+            <div id="storeResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>Find Functions by Signature</h2>
+            <form id="findForm">
+                <label for="signature">Function Signature:</label>
+                <input type="text" id="signature" name="signature" required>
+                <button type="submit">Find</button>
+            </form>
+            <div id="findResult"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

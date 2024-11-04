@@ -129,7 +129,19 @@ services:
         SERVICE_PORT: ${GATEWAY_PORT}
     ports:
       - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+    depends_on:
+      - container
+      - parser
     init: true
+  
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ../frontend:/usr/share/nginx/html
+    depends_on:
+      - gateway
 
 volumes:
   postgres-data:

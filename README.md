@@ -1,6 +1,8 @@
 # godex
 [Hoogle](https://hoogle.haskell.org/)-like search engine for Go, literally Google
 
+![](img/web.png)
+
 ## Quick Start
 
 ### Configure
@@ -9,7 +11,7 @@ To configure the project create .env file with this variables:
 
 | Variable Name           | Description                                                                 |
 |-------------------------|-----------------------------------------------------------------------------|
-| `GATEWAY_PORT`       | Integer value representing the port where HTTP requests should go.         |
+| `GATEWAY_PORT`       | Port where HTTP requests should go.         |
 | `PARSER_PORT`           | Port of the WebSocket server implemented in the parser microservice.             |
 | `CONTAINER_PORT`        | Port of the WebSocket server implemented in the container microservice.          |
 | `KAFKA_BROKER`          | Apache Kafka port.                                                          |
@@ -47,6 +49,7 @@ docker compose --env-file .env -f deployments/docker-compose.yml build
 ```shell
 docker compose --env-file .env -f deployments/docker-compose.yml up -d
 ```
+Then go to the `http://localhost:80`.
 
 ## API
 
@@ -128,7 +131,7 @@ Provide the signature to find all the functions with such signature in database.
 
 **URL**: `/find`
 
-**Method**: `GET`
+**Method**: `POST`
 
 **Content-Type**: `application/json`
 
