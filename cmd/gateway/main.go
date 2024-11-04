@@ -8,7 +8,8 @@ import (
 	"github.com/allnightmarel0Ng/godex/internal/app/gateway/usecase"
 	"github.com/allnightmarel0Ng/godex/internal/config"
 	"github.com/allnightmarel0Ng/godex/internal/logger"
-	"github.com/go-chi/chi/v5"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -22,10 +23,16 @@ func main() {
 		url.URL{Scheme: "ws", Host: "container:"+conf.ContainerPort, Path: "/"})
 	handle := handler.NewGatewayHandler(useCase)
 
-	router := chi.NewRouter()
+	router := gin.Default()
 
-	router.Post("/store", handle.HandleStore)
-	router.Get("/find", handle.HandleFind)
+	router.Use(cors.New(cors.Config{
+        AllowOrigins: []string{"http://localhost"},
+        AllowMethods: []string{"POST"},
+        AllowHeaders: []string{"Content-Type"},
+    }))
+
+	router.POST("/store", handle.HandleStore)
+	router.POST("/find", handle.HandleFind)
 
 	err = http.ListenAndServe(":"+conf.GatewayPort, router)
 	if err != nil {
