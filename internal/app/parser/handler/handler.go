@@ -3,79 +3,81 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/allnightmarel0Ng/godex/internal/app/parser/usecase"
+	"github.com/allnightmarel0Ng/godex/internal/domain/model"
 	"github.com/allnightmarel0Ng/godex/internal/logger"
-	"github.com/gorilla/websocket"
+	"github.com/gin-gonic/gin"
 )
 
-type response struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
 type ParserHandler struct {
-	upgrader websocket.Upgrader
 	useCase  usecase.ParserUseCase
 }
 
 func NewParserHandler(useCase usecase.ParserUseCase) ParserHandler {
 	return ParserHandler{
-		upgrader: websocket.Upgrader{},
 		useCase:  useCase,
 	}
 }
 
-func send(conn *websocket.Conn, code int, message string) {
-	bytes, _ := json.Marshal(response{
-		Code:    code,
+func send(c *gin.Context, code int, message string) {
+	c.JSON(code, model.Response{
+		Code: code,
 		Message: message,
 	})
-
-	if err := conn.WriteMessage(websocket.TextMessage, bytes); err != nil {
-		logger.Warning("unable to send the message: %s", err.Error())
-	}
 }
 
-func (p ParserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	logger.Debug("ServeHTTP: start")
-	defer logger.Debug("ServeHTTP: end")
+func (p *ParserHandler) HandleLink(c *gin.Context) {
+	logger.Debug("HandleLink: start")
+	defer logger.Debug("HandleLink: end")
 
-	conn, err := p.upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		logger.Warning("unable to set ws connection: %s", err.Error())
-		return
-	}
-	defer conn.Close()
+	if c.GetHeader("Content-Type") != "application/json" {
+        send(c, http.StatusBadRequest, "wrong content type: should be application/json")
+        logger.Warning("wrong content type")
+        return
+    }
 
-	_, url, err := conn.ReadMessage()
-	if err != nil {
-		logger.Info("disconnected")
-		return
-	}
+    body, err := io.ReadAll(c.Request.Body)
+    if err != nil {
+        send(c, http.StatusInternalServerError, "error reading request body")
+        logger.Warning("error reading request body")
+        return
+    }
+    defer c.Request.Body.Close()
 
-	fileName, packageName, link, err := p.useCase.ParseUrl(string(url))
+    var link struct {
+        Link string `json:"link"`
+    }
+    err = json.Unmarshal(body, &link)
+    if err != nil {
+        send(c, http.StatusBadRequest, "error parsing JSON")
+        logger.Warning("error parsing JSON")
+        return
+    }
+
+	fileName, packageName, url, err := p.useCase.ParseUrl(link.Link)
 	if err != nil {
 		message := fmt.Sprintf("invalid link: %s", err.Error())
 		logger.Warning(message)
-		send(conn, http.StatusBadRequest, message)
+		send(c, http.StatusBadRequest, message)
 		return
 	}
 
-	bytes, err := p.useCase.FetchFile(string(url))
+	bytes, err := p.useCase.FetchFile(url)
 	if err != nil {
 		message := fmt.Sprintf("unable to fetch the data from link: %s", err.Error())
 		logger.Warning(message)
-		send(conn, http.StatusNotFound, message)
+		send(c, http.StatusNotFound, message)
 		return
 	}
 
-	functions, err := p.useCase.ExtractFunctions(bytes, fileName, packageName, link)
+	functions, err := p.useCase.ExtractFunctions(bytes, fileName, packageName, url)
 	if err != nil {
 		message := fmt.Sprintf("unable to get functions from file: %s", err.Error())
 		logger.Warning(message)
-		send(conn, http.StatusInternalServerError, message)
+		send(c, http.StatusInternalServerError, message)
 		return
 	}
 
@@ -86,5 +88,5 @@ func (p ParserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	send(conn, http.StatusOK, "success")
+	send(c, http.StatusOK, "success")
 }

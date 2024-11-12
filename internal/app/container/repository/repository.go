@@ -9,7 +9,6 @@ import (
 
 type ContainerRepository interface {
 	InsertFunction(metadata model.FunctionMetadata) error
-	GetFunctionBySignature(signature string) ([]model.FunctionMetadata, error)
 }
 
 type containerRepository struct {
@@ -56,8 +55,4 @@ func (c *containerRepository) InsertFunction(metadata model.FunctionMetadata) er
 	}
 
 	return c.functionRepo.InsertFunction(metadata.Name, metadata.Signature, fileID, metadata.Comment, tx)
-}
-
-func (c *containerRepository) GetFunctionBySignature(signature string) ([]model.FunctionMetadata, error) {
-	return c.functionRepo.GetFunctionsBySignature(signature)
 }

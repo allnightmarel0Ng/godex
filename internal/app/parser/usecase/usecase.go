@@ -2,18 +2,18 @@ package usecase
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"log"
+	"io"
+	"net/http"
 	"net/url"
 	"strings"
 	"unicode"
-	"net/http"
-	"fmt"
-	"io"
 
 	"github.com/allnightmarel0Ng/godex/internal/domain/model"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/kafka"
@@ -39,8 +39,8 @@ func NewParserUseCase(producer *kafka.Producer, whiteList map[string]bool) Parse
 }
 
 func (p *parserUseCase) ProduceMessage(toSend model.FunctionMetadata) error {
-	log.Printf("trying to produce: %s", toSend.ToString())
-	return p.producer.Produce("functions", []byte(toSend.ToString()))
+	data, _ := json.Marshal(toSend)
+	return p.producer.Produce("functions", data)
 }
 
 func (p *parserUseCase) FetchFile(url string) ([]byte, error) {
@@ -120,14 +120,14 @@ func (p *parserUseCase) ExtractFunctions(code []byte, fileName, packageName, lin
 				signature.WriteString(")")
 			}
 		}
-		comment := "NoComment"
+		comment := ""
 		if function.Doc != nil {
 			comment = function.Doc.Text()
 		}
 
 		functions = append(functions, model.FunctionMetadata{
 			Name:      function.Name.Name,
-			Signature: strings.Replace(signature.String(), " ", "", -1),
+			Signature: strings.ReplaceAll(signature.String(), " ", ""),
 			Comment:   comment,
 			File: model.FileMetadata{
 				Name: fileName,

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/allnightmarel0Ng/godex/internal/app/container/handler"
 	"github.com/allnightmarel0Ng/godex/internal/app/container/repository"
@@ -44,10 +43,6 @@ func main() {
 		logger.Error("unable to subscribe kafka consumer on topic: %s", err.Error())
 	}
 
-	kafkaHandler := handler.NewContainerKafkaHandler(consumer, useCase)
-	go kafkaHandler.Handle()
-
-	wsHandler := handler.NewContainerWebSocketHandler(useCase)
-	http.Handle("/", wsHandler)
-	logger.Error("%s", http.ListenAndServe(":"+conf.ContainerPort, nil))
+	handler := handler.NewContainerHandler(consumer, useCase)
+	handler.Handle()
 }

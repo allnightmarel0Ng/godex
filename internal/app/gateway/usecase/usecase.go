@@ -1,9 +1,15 @@
 package usecase
 
 import (
-	"net/url"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
 
-	"github.com/gorilla/websocket"
+	"github.com/allnightmarel0Ng/godex/internal/app/gateway/repository"
+	"github.com/allnightmarel0Ng/godex/internal/domain/model"
 )
 
 type GatewayUseCase interface {
@@ -12,45 +18,38 @@ type GatewayUseCase interface {
 }
 
 type gatewayUseCase struct {
-	toParser    url.URL
-	toContainer url.URL
+	repo repository.GatewayRepository
+	parserPort string
 }
 
-func NewGatewayUseCase(parserURL url.URL, containerURL url.URL) GatewayUseCase {
+func NewGatewayUseCase(repo repository.GatewayRepository, parserPort string) GatewayUseCase {
 	return &gatewayUseCase{
-		toParser:    parserURL,
-		toContainer: containerURL,
+		repo: repo,
+		parserPort: parserPort,
 	}
 }
 
 func (e *gatewayUseCase) Store(link string) ([]byte, error) {
-	parserConn, _, err := websocket.DefaultDialer.Dial(e.toParser.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	defer parserConn.Close()
-	
-	err = parserConn.WriteMessage(websocket.TextMessage, []byte(link))
+	requestBody, _ := json.Marshal(model.Link{
+		Link: link,
+	})
+
+	response, err := http.Post(fmt.Sprintf("http://parser:%s/", e.parserPort), "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, err
 	}
 
-	_, response, err := parserConn.ReadMessage()
-	return response, err
+	body, err := io.ReadAll(response.Body)
+	return body, err
 }
 
 func (e *gatewayUseCase) Find(signature string) ([]byte, error) {
-	containerConn, _, err := websocket.DefaultDialer.Dial(e.toContainer.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	defer containerConn.Close()
+	signature = strings.ReplaceAll(signature, " ", "")
 	
-	err = containerConn.WriteMessage(websocket.TextMessage, []byte(signature))
+	functions, err := e.repo.GetFunctionBySignature(signature)
 	if err != nil {
 		return nil, err
 	}
 
-	_, response, err := containerConn.ReadMessage()
-	return response, err
+	return json.Marshal(functions)
 }

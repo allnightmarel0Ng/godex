@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/allnightmarel0Ng/godex/internal/app/gateway/handler"
+	"github.com/allnightmarel0Ng/godex/internal/app/gateway/repository"
 	"github.com/allnightmarel0Ng/godex/internal/app/gateway/usecase"
 	"github.com/allnightmarel0Ng/godex/internal/config"
+	domainRepository "github.com/allnightmarel0Ng/godex/internal/domain/repository"
+	"github.com/allnightmarel0Ng/godex/internal/infrastructure/postgres"
 	"github.com/allnightmarel0Ng/godex/internal/logger"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -18,9 +22,14 @@ func main() {
 		logger.Error("unable to load config: %s", err.Error())
 	}
 
-	useCase := usecase.NewGatewayUseCase(
-		url.URL{Scheme: "ws", Host: "parser:"+conf.ParserPort, Path: "/"}, 
-		url.URL{Scheme: "ws", Host: "container:"+conf.ContainerPort, Path: "/"})
+	db, err := postgres.NewDatabase(context.Background(), fmt.Sprintf("postgresql://%s:%s@postgres:%s/%s?sslmode=disable", conf.PostgresUser, conf.PostgresPassword, conf.PostgresPort, conf.PostgresDB))
+	if err != nil {
+		logger.Error("unable to connect to the database: %s", err.Error())
+	}
+	defer db.Close()
+
+	repository := repository.NewGatewayRepositiry(domainRepository.NewFunctionRepository(db))
+	useCase := usecase.NewGatewayUseCase(repository, conf.ParserPort)
 	handle := handler.NewGatewayHandler(useCase)
 
 	router := gin.Default()

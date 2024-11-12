@@ -8,6 +8,8 @@ import (
 	"github.com/allnightmarel0Ng/godex/internal/config"
 	"github.com/allnightmarel0Ng/godex/internal/infrastructure/kafka"
 	"github.com/allnightmarel0Ng/godex/internal/logger"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -25,6 +27,18 @@ func main() {
 	useCase := usecase.NewParserUseCase(producer, conf.WhiteList)
 	handler := handler.NewParserHandler(useCase)
 
-	http.Handle("/", handler)
-	logger.Error("%s", http.ListenAndServe(":"+conf.ParserPort, nil))
+	router := gin.Default()
+
+	router.Use(cors.New(cors.Config{
+        AllowOrigins: []string{"http://localhost"},
+        AllowMethods: []string{"POST"},
+        AllowHeaders: []string{"Content-Type"},
+    }))
+
+	router.POST("/", handler.HandleLink)
+
+	err = http.ListenAndServe(":"+conf.ParserPort, router)
+	if err != nil {
+		logger.Error("unable to listen and serve: %s", err.Error())
+	}
 }

@@ -6,17 +6,13 @@ import (
 	"net/http"
 
 	"github.com/allnightmarel0Ng/godex/internal/app/gateway/usecase"
+	"github.com/allnightmarel0Ng/godex/internal/domain/model"
 	"github.com/allnightmarel0Ng/godex/internal/logger"
 	"github.com/gin-gonic/gin"
 )
 
 type GatewayHandler struct {
 	useCase usecase.GatewayUseCase
-}
-
-type response struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
 }
 
 func NewGatewayHandler(useCase usecase.GatewayUseCase) GatewayHandler {
@@ -26,9 +22,9 @@ func NewGatewayHandler(useCase usecase.GatewayUseCase) GatewayHandler {
 }
 
 func (e *GatewayHandler) sendError(c *gin.Context, statusCode int, message string) {
-    c.JSON(statusCode, gin.H{
-        "code":    statusCode,
-        "message": message,
+    c.JSON(statusCode, model.Response{
+        Code:    statusCode,
+        Message: message,
     })
 }
 
@@ -50,9 +46,7 @@ func (e *GatewayHandler) HandleStore(c *gin.Context) {
     }
     defer c.Request.Body.Close()
 
-    var link struct {
-        Link string `json:"link"`
-    }
+    var link model.Link
     err = json.Unmarshal(body, &link)
     if err != nil {
         e.sendError(c, http.StatusBadRequest, "error parsing JSON")
@@ -65,11 +59,11 @@ func (e *GatewayHandler) HandleStore(c *gin.Context) {
     payload, err := e.useCase.Store(link.Link)
     if err != nil {
         e.sendError(c, http.StatusInternalServerError, "unexpected error")
-        logger.Warning("websocket error: %s", err.Error())
+        logger.Warning("unexpected http error: %s", err.Error())
         return
     }
 
-    var response response
+    var response model.Response
     if json.Unmarshal(payload, &response) != nil {
         e.sendError(c, http.StatusInternalServerError, "unexpected error")
         logger.Warning("json unmarshalling error")
@@ -98,9 +92,7 @@ func (e *GatewayHandler) HandleFind(c *gin.Context) {
     }
     defer c.Request.Body.Close()
 
-    var signature struct {
-        Signature string `json:"signature"`
-    }
+    var signature model.Signature
     err = json.Unmarshal(body, &signature)
     if err != nil {
         e.sendError(c, http.StatusBadRequest, "error parsing JSON")
@@ -109,15 +101,9 @@ func (e *GatewayHandler) HandleFind(c *gin.Context) {
     }
 
     payload, err := e.useCase.Find(signature.Signature)
-    if err != nil || payload == nil || string(payload) == "NOT_FOUND" {
+    if err != nil || payload == nil {
         e.sendError(c, http.StatusNotFound, "error finding signature")
         logger.Warning("error finding signature")
-        return
-    }
-
-    if string(payload) == "DB_ERROR" || string(payload) == "READ_ERROR" {
-        e.sendError(c, http.StatusInternalServerError, "unexpected error")
-        logger.Warning("container got an error: %s", string(payload))
         return
     }
 
