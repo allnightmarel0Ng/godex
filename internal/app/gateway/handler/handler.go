@@ -46,17 +46,7 @@ func (e *GatewayHandler) HandleStore(c *gin.Context) {
     }
     defer c.Request.Body.Close()
 
-    var link model.Link
-    err = json.Unmarshal(body, &link)
-    if err != nil {
-        e.sendError(c, http.StatusBadRequest, "error parsing JSON")
-        logger.Warning("error parsing JSON")
-        return
-    }
-
-	logger.Info("LINK: %s", link.Link)
-
-    payload, err := e.useCase.Store(link.Link)
+    payload, err := e.useCase.Store(body)
     if err != nil {
         e.sendError(c, http.StatusInternalServerError, "unexpected error")
         logger.Warning("unexpected http error: %s", err.Error())

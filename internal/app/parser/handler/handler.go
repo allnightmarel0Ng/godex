@@ -47,9 +47,7 @@ func (p *ParserHandler) HandleLink(c *gin.Context) {
     }
     defer c.Request.Body.Close()
 
-    var link struct {
-        Link string `json:"link"`
-    }
+    var link model.Link
     err = json.Unmarshal(body, &link)
     if err != nil {
         send(c, http.StatusBadRequest, "error parsing JSON")

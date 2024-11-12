@@ -9,11 +9,10 @@ import (
 	"strings"
 
 	"github.com/allnightmarel0Ng/godex/internal/app/gateway/repository"
-	"github.com/allnightmarel0Ng/godex/internal/domain/model"
 )
 
 type GatewayUseCase interface {
-	Store(link string) ([]byte, error)
+	Store(requestBody []byte) ([]byte, error)
 	Find(signature string) ([]byte, error)
 }
 
@@ -29,11 +28,7 @@ func NewGatewayUseCase(repo repository.GatewayRepository, parserPort string) Gat
 	}
 }
 
-func (e *gatewayUseCase) Store(link string) ([]byte, error) {
-	requestBody, _ := json.Marshal(model.Link{
-		Link: link,
-	})
-
+func (e *gatewayUseCase) Store(requestBody []byte) ([]byte, error) {
 	response, err := http.Post(fmt.Sprintf("http://parser:%s/", e.parserPort), "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, err
