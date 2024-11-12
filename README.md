@@ -5,7 +5,7 @@
 
 ## Quick Start
 
-### Configure
+### Configuration
 
 To configure the project create .env file with this variables:
 
@@ -38,16 +38,13 @@ POSTGRES_PORT_INCREMENTED=5433
 WHITE_LIST=["raw.githubusercontent.com"]
 ```
 
-### Build
+### Build commands
 
 ```shell
-docker compose --env-file .env -f deployments/docker-compose.yml build
-```
-
-### Run
-
-```shell
-docker compose --env-file .env -f deployments/docker-compose.yml up -d
+make # to build and run the application
+make build
+make run
+make down # to stop the application
 ```
 Then go to the `http://localhost:80`.
 
