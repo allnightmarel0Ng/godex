@@ -1,15 +1,15 @@
 package kafka
 
 import (
-	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type Producer struct {
-	producer *confluentkafka.Producer
+	producer *kafka.Producer
 }
 
 func NewProducer(broker string) (*Producer, error) {
-	p, err := confluentkafka.NewProducer(&confluentkafka.ConfigMap{"bootstrap.servers": broker})
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": broker})
 	if err != nil {
 		return nil, err
 	}
@@ -19,8 +19,8 @@ func NewProducer(broker string) (*Producer, error) {
 }
 
 func (p *Producer) Produce(topic string, message []byte) error {
-	return p.producer.Produce(&confluentkafka.Message{
-		TopicPartition: confluentkafka.TopicPartition{Topic: &topic, Partition: confluentkafka.PartitionAny},
+	return p.producer.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          message,
 	}, nil)
 }
