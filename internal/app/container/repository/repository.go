@@ -13,15 +13,15 @@ type ContainerRepository interface {
 
 type containerRepository struct {
 	functionRepo repository.FunctionRepository
-	fileRepo repository.FileRepository
-	packageRepo repository.PackageRepository
+	fileRepo     repository.FileRepository
+	packageRepo  repository.PackageRepository
 }
 
 func NewContainerRepository(functionRepo repository.FunctionRepository, fileRepo repository.FileRepository, packageRepo repository.PackageRepository) ContainerRepository {
 	return &containerRepository{
 		functionRepo: functionRepo,
-		fileRepo: fileRepo,
-		packageRepo: packageRepo,
+		fileRepo:     fileRepo,
+		packageRepo:  packageRepo,
 	}
 }
 

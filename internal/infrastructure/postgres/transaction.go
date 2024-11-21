@@ -15,13 +15,13 @@ type Transaction interface {
 }
 
 type transaction struct {
-	tx pgx.Tx
+	tx  pgx.Tx
 	ctx context.Context
 }
 
 func newTransaction(ctx context.Context, tx pgx.Tx) Transaction {
 	return &transaction{
-		tx: tx,
+		tx:  tx,
 		ctx: ctx,
 	}
 }

@@ -8,13 +8,11 @@ import (
 )
 
 const (
-	selectPackage = 
-		`SELECT id 
+	selectPackage = `SELECT id 
 		FROM public.packages 
 		WHERE name = $1 AND link = $2;`
 
-	insertPackage = 
-		`INSERT INTO public.packages (name, link) 
+	insertPackage = `INSERT INTO public.packages (name, link) 
 		VALUES ($1, $2) 
 		RETURNING id;`
 )

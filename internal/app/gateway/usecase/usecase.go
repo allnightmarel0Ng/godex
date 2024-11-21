@@ -17,13 +17,13 @@ type GatewayUseCase interface {
 }
 
 type gatewayUseCase struct {
-	repo repository.GatewayRepository
+	repo       repository.GatewayRepository
 	parserPort string
 }
 
 func NewGatewayUseCase(repo repository.GatewayRepository, parserPort string) GatewayUseCase {
 	return &gatewayUseCase{
-		repo: repo,
+		repo:       repo,
 		parserPort: parserPort,
 	}
 }
@@ -40,7 +40,7 @@ func (e *gatewayUseCase) Store(requestBody []byte) ([]byte, error) {
 
 func (e *gatewayUseCase) Find(signature string) ([]byte, error) {
 	signature = strings.ReplaceAll(signature, " ", "")
-	
+
 	functions, err := e.repo.GetFunctionBySignature(signature)
 	if err != nil {
 		return nil, err

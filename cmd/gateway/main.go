@@ -35,10 +35,10 @@ func main() {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-        AllowOrigins: []string{"http://localhost"},
-        AllowMethods: []string{"POST"},
-        AllowHeaders: []string{"Content-Type"},
-    }))
+		AllowOrigins: []string{"http://localhost"},
+		AllowMethods: []string{"POST"},
+		AllowHeaders: []string{"Content-Type"},
+	}))
 
 	router.POST("/store", handle.HandleStore)
 	router.POST("/find", handle.HandleFind)

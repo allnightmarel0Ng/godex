@@ -13,18 +13,18 @@ import (
 )
 
 type ParserHandler struct {
-	useCase  usecase.ParserUseCase
+	useCase usecase.ParserUseCase
 }
 
 func NewParserHandler(useCase usecase.ParserUseCase) ParserHandler {
 	return ParserHandler{
-		useCase:  useCase,
+		useCase: useCase,
 	}
 }
 
 func send(c *gin.Context, code int, message string) {
 	c.JSON(code, model.Response{
-		Code: code,
+		Code:    code,
 		Message: message,
 	})
 }
@@ -34,26 +34,26 @@ func (p *ParserHandler) HandleLink(c *gin.Context) {
 	defer logger.Debug("HandleLink: end")
 
 	if c.GetHeader("Content-Type") != "application/json" {
-        send(c, http.StatusBadRequest, "wrong content type: should be application/json")
-        logger.Warning("wrong content type")
-        return
-    }
+		send(c, http.StatusBadRequest, "wrong content type: should be application/json")
+		logger.Warning("wrong content type")
+		return
+	}
 
-    body, err := io.ReadAll(c.Request.Body)
-    if err != nil {
-        send(c, http.StatusInternalServerError, "error reading request body")
-        logger.Warning("error reading request body")
-        return
-    }
-    defer c.Request.Body.Close()
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		send(c, http.StatusInternalServerError, "error reading request body")
+		logger.Warning("error reading request body")
+		return
+	}
+	defer c.Request.Body.Close()
 
-    var link model.Link
-    err = json.Unmarshal(body, &link)
-    if err != nil {
-        send(c, http.StatusBadRequest, "error parsing JSON")
-        logger.Warning("error parsing JSON")
-        return
-    }
+	var link model.Link
+	err = json.Unmarshal(body, &link)
+	if err != nil {
+		send(c, http.StatusBadRequest, "error parsing JSON")
+		logger.Warning("error parsing JSON")
+		return
+	}
 
 	fileName, packageName, url, err := p.useCase.ParseUrl(link.Link)
 	if err != nil {

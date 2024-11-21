@@ -9,18 +9,15 @@ import (
 )
 
 const (
-	selectFunction = 
-		`SELECT id 
+	selectFunction = `SELECT id 
 		FROM public.functions 
 		WHERE name = $1 AND signature = $2 AND file_id = $3 AND comment = $4;`
 
-	insertFunction = 
-		`INSERT INTO public.functions (name, signature, file_id, comment) 
+	insertFunction = `INSERT INTO public.functions (name, signature, file_id, comment) 
 		VALUES ($1, $2, $3, $4) 
 		RETURNING id;`
 
-	selectBySignature = 
-		`SELECT
+	selectBySignature = `SELECT
 			f.name AS function_name,
 			f.signature AS signature,
 			f.comment AS comment,
@@ -81,9 +78,9 @@ func (f *functionRepository) GetFunctionsBySignature(signature string) ([]model.
 		}
 
 		result = append(result, model.FunctionMetadata{
-			Name: functionName,
+			Name:      functionName,
 			Signature: signature,
-			Comment: comment,
+			Comment:   comment,
 			File: model.FileMetadata{
 				Name: fileName,
 				Package: model.PackageMetadata{

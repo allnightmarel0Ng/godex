@@ -8,13 +8,11 @@ import (
 )
 
 const (
-	selectFile = 
-		`SELECT id 
+	selectFile = `SELECT id 
 		FROM public.files 
 		WHERE name = $1 AND package_id = $2;`
 
-	insertFile = 
-		`INSERT INTO public.files (name, package_id) 
+	insertFile = `INSERT INTO public.files (name, package_id) 
 		VALUES ($1, $2) 
 		RETURNING id;`
 )
